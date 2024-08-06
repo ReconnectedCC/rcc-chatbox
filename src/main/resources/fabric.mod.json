@@ -3,10 +3,14 @@
   "id": "ct-chatbox",
   "version": "${version}",
   "name": "Chatbox Server",
-  "description": "",
-  "authors": [],
-  "contact": {},
-  "license": "All-Rights-Reserved",
+  "description": "Chatbox WebSocket server for the project CT Minecraft server",
+  "authors": [
+    "AlexDevs"
+  ],
+  "contact": {
+    "sources": "https://github.com/project-connecticut/ct-chatbox"
+  },
+  "license": "MIT License",
   "icon": "assets/ct-chatbox/icon.png",
   "environment": "server",
   "entrypoints": {
