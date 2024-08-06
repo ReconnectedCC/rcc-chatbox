@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "ct-chatbox",
+  "version": "${version}",
+  "name": "Chatbox Server",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/ct-chatbox/icon.png",
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "ct.chatbox.Chatbox"
+    ]
+  },
+  "mixins": [
+    "ct-chatbox.mixins.json",
+    {
+      "config": "ct-chatbox.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}",
+    "ct-server": ">=1.3.1"
+  }
+}
