@@ -1,20 +1,24 @@
-package ct.chatbox.ws;
+package cc.reconnected.chatbox.ws;
 
-import ct.chatbox.Chatbox;
-import ct.chatbox.models.Error;
-import ct.chatbox.models.client.ClientPacketBase;
-import ct.chatbox.models.client.SayPacket;
-import ct.chatbox.models.client.TellPacket;
+import cc.reconnected.chatbox.Chatbox;
+import cc.reconnected.chatbox.events.Say;
+import cc.reconnected.chatbox.license.Capability;
+import cc.reconnected.chatbox.models.Error;
+import cc.reconnected.chatbox.models.client.ClientPacketBase;
+import cc.reconnected.chatbox.models.client.SayPacket;
+import cc.reconnected.chatbox.models.client.TellPacket;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 
 import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
 public class WsServer extends WebSocketServer {
     public static final Pattern PATH_LICENSE = Pattern.compile("^/([0-9a-f-]+)$", Pattern.CASE_INSENSITIVE);
+    private HashMap<WebSocket, ChatboxClient> clients = new HashMap<>();
 
     public WsServer(InetSocketAddress address) {
         super(address);
@@ -37,16 +41,19 @@ public class WsServer extends WebSocketServer {
         var licenseUuid = UUID.fromString(licenseString);
 
         var license = Chatbox.LicenseManager.getLicense(licenseUuid);
-        if(license == null) {
+        if (license == null) {
             conn.close(CloseCodes.UNKNOWN_LICENSE_KEY.code, CloseCodes.UNKNOWN_LICENSE_KEY.getErrorString());
             return;
         }
+
+        clients.put(conn, new ChatboxClient(license, conn));
 
         Chatbox.LOGGER.info("New connection with license {} ({})", license.uuid(), license.userId());
     }
 
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
+        clients.remove(conn);
     }
 
     @Override
@@ -61,14 +68,32 @@ public class WsServer extends WebSocketServer {
             return;
         }
 
+        var client = clients.get(conn);
         var id = packet.id != null ? packet.id : -1;
 
         switch (packet.type) {
             case "say":
                 var sayPacket = Chatbox.GSON.fromJson(message, SayPacket.class);
+                if (!client.license.capabilities().contains(Capability.SAY)) {
+                    var err = ClientErrors.MISSING_CAPABILITY;
+                    conn.send(Chatbox.GSON.toJson(new Error(err.getErrorMessage(), err.message, id)));
+                    return;
+                }
+
+                if (!("markdown".equals(sayPacket.mode) || "raw".equals(sayPacket.mode)))
+                    sayPacket.mode = "markdown";
+
+                Say.EVENT.invoker().say(client.license, sayPacket);
+
                 break;
             case "tell":
                 var tellPacket = Chatbox.GSON.fromJson(message, TellPacket.class);
+                if (!client.license.capabilities().contains(Capability.TELL)) {
+                    var err = ClientErrors.MISSING_CAPABILITY;
+                    conn.send(Chatbox.GSON.toJson(new Error(err.getErrorMessage(), err.message, id)));
+                    return;
+                }
+
                 break;
             default:
                 var err = ClientErrors.UNKNOWN_TYPE;
@@ -79,7 +104,11 @@ public class WsServer extends WebSocketServer {
 
     @Override
     public void onError(WebSocket conn, Exception ex) {
-
+        if (conn != null) {
+            Chatbox.LOGGER.error("WebSocket client failure " + conn.getRemoteSocketAddress().getHostString(), ex.getMessage());
+        } else {
+            Chatbox.LOGGER.error("WebSocket failure", ex);
+        }
     }
 
     @Override

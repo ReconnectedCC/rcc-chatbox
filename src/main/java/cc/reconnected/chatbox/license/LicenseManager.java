@@ -1,10 +1,9 @@
-package ct.chatbox.license;
+package cc.reconnected.chatbox.license;
 
-import ct.chatbox.Chatbox;
+import cc.reconnected.chatbox.Chatbox;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;

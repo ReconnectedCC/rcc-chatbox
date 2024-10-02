@@ -1,4 +1,4 @@
-package ct.chatbox.license;
+package cc.reconnected.chatbox.license;
 
 import java.util.HashSet;
 import java.util.Set;

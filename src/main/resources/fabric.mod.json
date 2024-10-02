@@ -3,27 +3,23 @@
   "id": "ct-chatbox",
   "version": "${version}",
   "name": "Chatbox Server",
-  "description": "Chatbox WebSocket server for the project CT Minecraft server",
+  "description": "Chatbox WebSocket server for the ReconnectedCC Minecraft server",
   "authors": [
     "AlexDevs"
   ],
   "contact": {
-    "sources": "https://github.com/project-connecticut/ct-chatbox"
+    "sources": "https://github.com/ReconnectedCC/rcc-chatbox"
   },
   "license": "MIT License",
   "icon": "assets/ct-chatbox/icon.png",
   "environment": "server",
   "entrypoints": {
     "main": [
-      "ct.chatbox.Chatbox"
+      "cc.reconnected.chatbox.Chatbox"
     ]
   },
   "mixins": [
-    "ct-chatbox.mixins.json",
-    {
-      "config": "ct-chatbox.client.mixins.json",
-      "environment": "client"
-    }
+    "rcc-chatbox.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=${loader_version}",

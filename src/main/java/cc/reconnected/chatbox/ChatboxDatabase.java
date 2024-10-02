@@ -1,13 +1,13 @@
-package ct.chatbox;
+package cc.reconnected.chatbox;
 
-import ct.server.CtServer;
-import ct.server.database.DatabaseClient;
+import cc.reconnected.server.RccServer;
+import cc.reconnected.server.database.DatabaseClient;
 
 import java.sql.*;
 
 public class ChatboxDatabase {
     public Connection connection() throws SQLException {
-        return CtServer.getInstance().database().connection();
+        return RccServer.getInstance().database().connection();
     }
     /*
         uuid: varchar/uuid license key

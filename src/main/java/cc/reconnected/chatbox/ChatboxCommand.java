@@ -1,7 +1,7 @@
-package ct.chatbox;
+package cc.reconnected.chatbox;
 
 import com.mojang.brigadier.CommandDispatcher;
-import ct.chatbox.license.Capability;
+import cc.reconnected.chatbox.license.Capability;
 import me.lucko.fabric.api.permissions.v0.Permissions;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.server.command.CommandManager;

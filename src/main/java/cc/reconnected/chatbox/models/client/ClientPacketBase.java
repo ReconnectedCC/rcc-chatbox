@@ -1,4 +1,4 @@
-package ct.chatbox.models.client;
+package cc.reconnected.chatbox.models.client;
 
 import org.jetbrains.annotations.Nullable;
 

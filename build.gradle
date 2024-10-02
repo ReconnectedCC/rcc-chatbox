@@ -14,7 +14,7 @@ loom {
     splitEnvironmentSourceSets()
 
     mods {
-        "ct-chatbox" {
+        "rcc-chatbox" {
             sourceSet sourceSets.main
             sourceSet sourceSets.client
         }
@@ -49,8 +49,8 @@ dependencies {
     annotationProcessor modImplementation("io.wispforest:owo-lib:${project.owo_version}")
     include "io.wispforest:owo-sentinel:${project.owo_version}"
 
-    modImplementation "ct:ct-discord:${project.ctdiscord_version}"
-    modImplementation "ct:ct-server:${project.ctserver_version}"
+    modImplementation "cc.reconnected:rcc-discord:${project.rccdiscord_version}"
+    modImplementation "cc.reconnected:rcc-server:${project.rccserver_version}"
 
     include implementation("org.java-websocket:Java-WebSocket:${project.websocket_version}")
 
@@ -72,7 +72,7 @@ processResources {
     }
 }
 
-def targetJavaVersion = 21
+def targetJavaVersion = 17
 tasks.withType(JavaCompile).configureEach {
     // ensure that the encoding is set to UTF-8, no matter what the system default is
     // this fixes some edge cases with special characters not displaying correctly

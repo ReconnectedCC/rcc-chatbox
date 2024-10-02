@@ -1,9 +1,9 @@
-package ct.chatbox;
+package cc.reconnected.chatbox;
 
 import com.google.gson.Gson;
-import ct.chatbox.license.LicenseManager;
-import ct.chatbox.ws.WsServer;
-import ct.discordbridge.events.DiscordMessage;
+import cc.reconnected.chatbox.license.LicenseManager;
+import cc.reconnected.chatbox.ws.WsServer;
+import cc.reconnected.discordbridge.events.DiscordMessage;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -15,9 +15,9 @@ import java.net.InetSocketAddress;
 
 public class Chatbox implements ModInitializer {
 
-    public static final String MOD_ID = "ct-chatbox";
+    public static final String MOD_ID = "rcc-chatbox";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
-    public static final ct.chatbox.ChatboxConfig CONFIG = ct.chatbox.ChatboxConfig.createAndLoad();
+    public static final cc.reconnected.chatbox.ChatboxConfig CONFIG = cc.reconnected.chatbox.ChatboxConfig.createAndLoad();
     public static final Gson GSON = new Gson();
     public static LicenseManager LicenseManager = new LicenseManager();
 
@@ -50,6 +50,14 @@ public class Chatbox implements ModInitializer {
             database.ensureDatabaseCreated();
         });
 
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            try {
+                wss.stop();
+            } catch (InterruptedException e) {
+                LOGGER.error("Failed to stop WebSocket server", e);
+            }
+        });
+
         // discord chat events
         DiscordMessage.MESSAGE_CREATE.register((message, member, isEdited) -> {
 
@@ -61,6 +69,8 @@ public class Chatbox implements ModInitializer {
                 return true;
             }
             Chatbox.LOGGER.info("{}: {}", sender.getName().getString(), message.getContent().getString());
+
+
 
             return false;
         });

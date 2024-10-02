@@ -1,4 +1,4 @@
-package ct.chatbox.ws;
+package cc.reconnected.chatbox.ws;
 
 public enum CloseCodes {
     SERVER_STOPPING(4000, "Server is restarting, please reconnect in a few minutes"),
