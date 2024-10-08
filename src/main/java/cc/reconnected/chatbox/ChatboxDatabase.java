@@ -1,7 +1,6 @@
 package cc.reconnected.chatbox;
 
 import cc.reconnected.server.RccServer;
-import cc.reconnected.server.database.DatabaseClient;
 
 import java.sql.*;
 

@@ -1,8 +1,8 @@
-package cc.reconnected.chatbox.events;
+package cc.reconnected.chatbox.api.events;
 
 
 import cc.reconnected.chatbox.license.License;
-import cc.reconnected.chatbox.models.client.SayPacket;
+import cc.reconnected.chatbox.packets.clientPackets.SayPacket;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 

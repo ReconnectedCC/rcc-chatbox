@@ -2,7 +2,7 @@ package cc.reconnected.chatbox;
 
 import com.mojang.brigadier.CommandDispatcher;
 import cc.reconnected.chatbox.license.Capability;
-import me.lucko.fabric.api.permissions.v0.Permissions;
+//import me.lucko.fabric.api.permissions.v0.Permissions;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
@@ -17,7 +17,7 @@ public class ChatboxCommand {
         var manager = Chatbox.LicenseManager;
         dispatcher.register(
                 literal("chatbox")
-                        .requires(Permissions.require("chatbox.command", true))
+                        //.requires(Permissions.require("chatbox.command", true))
                         .executes(context -> {
 
                             return 1;
