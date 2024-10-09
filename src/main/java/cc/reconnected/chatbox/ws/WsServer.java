@@ -29,6 +29,8 @@ public class WsServer extends WebSocketServer {
     public static final Pattern PATH_LICENSE = Pattern.compile("^/([0-9a-z-]+)$", Pattern.CASE_INSENSITIVE);
     private final HashMap<WebSocket, ChatboxClient> clients = new HashMap<>();
     private final InetAddress guestAddress;
+    public static int messageMaxLength = 1024;
+    public static int nameMaxLength = 64;
 
     public HashMap<WebSocket, ChatboxClient> clients() {
         return clients;
@@ -146,6 +148,12 @@ public class WsServer extends WebSocketServer {
                     return;
                 }
 
+                sayPacket.text = sayPacket.text.substring(0, Math.min(sayPacket.text.length(), messageMaxLength));
+                if(sayPacket.name != null) {
+                    sayPacket.name = sayPacket.name.trim().replace("\n","");
+                    sayPacket.name = sayPacket.name.substring(0, Math.min(sayPacket.name.length(), nameMaxLength));
+                }
+
                 ChatboxSay.EVENT.invoker().say(client, sayPacket);
 
                 break;
@@ -177,6 +185,12 @@ public class WsServer extends WebSocketServer {
                     var err = ClientErrors.INVALID_MODE;
                     conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
                     return;
+                }
+
+                tellPacket.text = tellPacket.text.substring(0, Math.min(tellPacket.text.length(), messageMaxLength));
+                if(tellPacket.name != null) {
+                    tellPacket.name = tellPacket.name.trim().replace("\n","");
+                    tellPacket.name = tellPacket.name.substring(0, Math.min(tellPacket.name.length(), nameMaxLength));
                 }
 
                 ChatboxTell.EVENT.invoker().tell(client, tellPacket);
