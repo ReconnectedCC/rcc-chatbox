@@ -1,20 +1,23 @@
 package cc.reconnected.chatbox.ws;
 
 import cc.reconnected.chatbox.Chatbox;
-import cc.reconnected.chatbox.GameEvents;
-import cc.reconnected.chatbox.api.events.Say;
-import cc.reconnected.chatbox.api.events.Tell;
+import cc.reconnected.chatbox.api.events.ClientConnected;
+import cc.reconnected.chatbox.api.events.ChatboxSay;
+import cc.reconnected.chatbox.api.events.ChatboxTell;
 import cc.reconnected.chatbox.license.Capability;
 import cc.reconnected.chatbox.license.License;
+import cc.reconnected.chatbox.license.LicenseManager;
 import cc.reconnected.chatbox.packets.serverPackets.ErrorPacket;
 import cc.reconnected.chatbox.packets.clientPackets.ClientPacketBase;
 import cc.reconnected.chatbox.packets.clientPackets.SayPacket;
 import cc.reconnected.chatbox.packets.clientPackets.TellPacket;
+import joptsimple.util.InetAddressConverter;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 import org.jetbrains.annotations.Nullable;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.List;
@@ -23,15 +26,26 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 public class WsServer extends WebSocketServer {
-    public static final Pattern PATH_LICENSE = Pattern.compile("^/([0-9a-f-]+)$", Pattern.CASE_INSENSITIVE);
-    private HashMap<WebSocket, ChatboxClient> clients = new HashMap<>();
+    public static final Pattern PATH_LICENSE = Pattern.compile("^/([0-9a-z-]+)$", Pattern.CASE_INSENSITIVE);
+    private final HashMap<WebSocket, ChatboxClient> clients = new HashMap<>();
+    private final InetAddress guestAddress;
+
+    public HashMap<WebSocket, ChatboxClient> clients() {
+        return clients;
+    }
 
     public WsServer(InetSocketAddress address) {
         super(address);
+        this.guestAddress = new InetAddressConverter().convert(Chatbox.CONFIG.guestAllowedAddress());
     }
 
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
+        InetAddress clientAddress = conn.getRemoteSocketAddress().getAddress();
+        if(handshake.hasFieldValue("X-Forwarded-For")) {
+            clientAddress = new InetAddressConverter().convert(handshake.getFieldValue("X-Forwarded-For"));
+        }
+
         var path = conn.getResourceDescriptor();
         var matcher = PATH_LICENSE.matcher(path);
         if (!matcher.find()) {
@@ -44,7 +58,18 @@ public class WsServer extends WebSocketServer {
             return;
         }
 
-        var licenseUuid = UUID.fromString(licenseString);
+        UUID licenseUuid;
+
+        if (licenseString.equals("guest")) {
+            if(!clientAddress.equals(guestAddress)) {
+                conn.close(CloseCodes.EXTERNAL_GUESTS_NOT_ALLOWED.code, CloseCodes.EXTERNAL_GUESTS_NOT_ALLOWED.getErrorString());
+                return;
+            }
+
+            licenseUuid = LicenseManager.guestLicenseUuid;
+        } else {
+            licenseUuid = UUID.fromString(licenseString);
+        }
 
         License license;
         try {
@@ -59,14 +84,11 @@ public class WsServer extends WebSocketServer {
             return;
         }
 
-        clients.put(conn, new ChatboxClient(license, conn));
+        clients.put(conn, new ChatboxClient(license, conn, clientAddress));
 
-        Chatbox.LOGGER.info("New connection with license {} ({})", license.uuid(), license.userId());
+        Chatbox.LOGGER.info("[{}] New connection with license {} ({})", clientAddress, license.uuid(), license.userId());
 
-        if(license.capabilities().contains(Capability.READ)) {
-            var msg = Chatbox.GSON.toJson(GameEvents.createPlayersPacket());
-            conn.send(msg);
-        }
+        ClientConnected.EVENT.invoker().connect(conn, license, license.userId().equals(LicenseManager.guestLicenseUuid));
     }
 
     @Override
@@ -76,11 +98,17 @@ public class WsServer extends WebSocketServer {
 
     @Override
     public void onMessage(WebSocket conn, String message) {
-        Chatbox.LOGGER.info(message);
+        Chatbox.LOGGER.debug(message);
         ClientPacketBase packet;
         try {
             packet = Chatbox.GSON.fromJson(message, ClientPacketBase.class);
         } catch (Exception e) {
+            var err = ClientErrors.UNKNOWN_ERROR;
+            conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, -1)));
+            return;
+        }
+
+        if (packet == null) {
             var err = ClientErrors.UNKNOWN_ERROR;
             conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, -1)));
             return;
@@ -96,30 +124,62 @@ public class WsServer extends WebSocketServer {
         switch (packet.type) {
             case "say":
                 var sayPacket = Chatbox.GSON.fromJson(message, SayPacket.class);
+                sayPacket.id = id;
                 if (!client.license.capabilities().contains(Capability.SAY)) {
                     var err = ClientErrors.MISSING_CAPABILITY;
                     conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
                     return;
                 }
 
-                if (!("markdown".equals(sayPacket.mode) || "raw".equals(sayPacket.mode)))
+                if(sayPacket.text == null) {
+                    var err = ClientErrors.MISSING_TEXT;
+                    conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
+                    return;
+                }
+
+                if(sayPacket.mode == null)
                     sayPacket.mode = "markdown";
 
-                Say.EVENT.invoker().say(client.license, sayPacket);
+                if (!"markdown".equals(sayPacket.mode) && !"format".equals(sayPacket.mode)) {
+                    var err = ClientErrors.INVALID_MODE;
+                    conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
+                    return;
+                }
+
+                ChatboxSay.EVENT.invoker().say(client, sayPacket);
 
                 break;
             case "tell":
                 var tellPacket = Chatbox.GSON.fromJson(message, TellPacket.class);
+                tellPacket.id = id;
                 if (!client.license.capabilities().contains(Capability.TELL)) {
                     var err = ClientErrors.MISSING_CAPABILITY;
                     conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
                     return;
                 }
 
-                if (!("markdown".equals(tellPacket.mode) || "raw".equals(tellPacket.mode)))
+                if(tellPacket.user == null) {
+                    var err = ClientErrors.MISSING_USER;
+                    conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
+                    return;
+                }
+
+                if(tellPacket.text == null) {
+                    var err = ClientErrors.MISSING_TEXT;
+                    conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
+                    return;
+                }
+
+                if(tellPacket.mode == null)
                     tellPacket.mode = "markdown";
 
-                Tell.EVENT.invoker().tell(client.license, tellPacket);
+                if (!"markdown".equals(tellPacket.mode) && !"format".equals(tellPacket.mode)) {
+                    var err = ClientErrors.INVALID_MODE;
+                    conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
+                    return;
+                }
+
+                ChatboxTell.EVENT.invoker().tell(client, tellPacket);
 
                 break;
             default:
@@ -163,4 +223,32 @@ public class WsServer extends WebSocketServer {
         }
     }
 
+    public void broadcastOwnerEvent(Object packet, @Nullable Capability capability, UUID ownerId) {
+        var msg = Chatbox.GSON.toJson(packet);
+
+        List<WebSocket> recipients;
+        var ownerClients = clients
+                .entrySet()
+                .stream()
+                .filter(entry -> entry.getValue().license.userId().equals(ownerId))
+                .toList();
+
+        if (capability == null) {
+            recipients = ownerClients.stream().map(Map.Entry::getKey).toList();
+        } else {
+            recipients = ownerClients
+                    .stream()
+                    .filter(e -> e.getValue().license.capabilities().contains(capability))
+                    .map(Map.Entry::getKey)
+                    .toList();
+        }
+
+        for (var conn : recipients) {
+            conn.send(msg);
+        }
+    }
+
+    public void closeAllClients(CloseCodes closeCode) {
+        clients.forEach((conn, client) -> conn.close(closeCode.code, closeCode.message));
+    }
 }

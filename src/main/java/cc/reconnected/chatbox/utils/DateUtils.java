@@ -1,10 +1,9 @@
-package cc.reconnected.chatbox;
+package cc.reconnected.chatbox.utils;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.TimeZone;
 
-public class Utils {
+public class DateUtils {
     public static String getTime(Object obj) {
         var tz = TimeZone.getTimeZone("UTC");
         var df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");

@@ -3,7 +3,6 @@ package cc.reconnected.chatbox;
 import com.google.gson.Gson;
 import cc.reconnected.chatbox.license.LicenseManager;
 import cc.reconnected.chatbox.ws.WsServer;
-//import cc.reconnected.discordbridge.events.DiscordMessage;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import org.slf4j.Logger;
@@ -42,6 +41,6 @@ public class Chatbox implements ModInitializer {
     @Override
     public void onInitialize() {
         CommandRegistrationCallback.EVENT.register(ChatboxCommand::register);
-        GameEvents.register();
+        ChatboxEvents.register();
     }
 }

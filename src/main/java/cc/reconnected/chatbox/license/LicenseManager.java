@@ -9,7 +9,16 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class LicenseManager {
+    public static final UUID guestLicenseUuid = new UUID(0, 0);
+    public static final License guestLicense = new License(guestLicenseUuid, guestLicenseUuid);
+
     private final ConcurrentHashMap<UUID, License> cache = new ConcurrentHashMap<>();
+
+    public LicenseManager() {
+        guestLicense.capabilities().clear();
+        guestLicense.capabilities().add(Capability.READ);
+        cache.put(guestLicenseUuid, guestLicense);
+    }
 
     private License buildLicense(String uuid, String userId, int packedCapabilities) {
         var license = new License(UUID.fromString(uuid), UUID.fromString(userId));
@@ -19,6 +28,9 @@ public class LicenseManager {
 
     @Nullable
     public License getLicense(UUID licenseId) {
+        if(licenseId.equals(guestLicenseUuid)) {
+            return guestLicense;
+        }
         if (cache.containsKey(licenseId)) {
             return cache.get(licenseId);
         }
@@ -49,6 +61,9 @@ public class LicenseManager {
 
     @Nullable
     public License getLicenseFromUser(UUID userId) {
+        if(userId.equals(guestLicenseUuid)) {
+            return guestLicense;
+        }
         var license = cache.values().parallelStream().filter(l -> l.userId() == userId).findFirst().orElse(null);
         if (license != null) {
             return license;
@@ -79,6 +94,9 @@ public class LicenseManager {
     }
 
     public License createLicense(UUID userId, Set<Capability> capabilities) {
+        if(userId.equals(guestLicenseUuid)) {
+            return guestLicense;
+        }
         var license = getLicenseFromUser(userId);
         if (license != null) {
             return license;
@@ -107,6 +125,9 @@ public class LicenseManager {
     }
 
     public boolean deleteLicense(UUID licenseId) {
+        if(licenseId.equals(guestLicenseUuid)) {
+            return false;
+        }
         try {
             var conn = Chatbox.getInstance().database().connection();
             var stmt = conn.prepareStatement("DELETE FROM chatbox_licenses WHERE uuid = ?");
@@ -123,6 +144,9 @@ public class LicenseManager {
     }
 
     public boolean updateLicense(UUID licenseId, Set<Capability> capabilities) {
+        if(licenseId.equals(guestLicenseUuid)) {
+            return false;
+        }
         try {
             var conn = Chatbox.getInstance().database().connection();
             var stmt = conn.prepareStatement("UPDATE chatbox_licenses SET capabilities = ? WHERE uuid = ?");

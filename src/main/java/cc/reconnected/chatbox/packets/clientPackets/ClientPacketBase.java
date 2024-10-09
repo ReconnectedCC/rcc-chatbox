@@ -6,5 +6,5 @@ public class ClientPacketBase {
     public String type;
 
     @Nullable
-    public Integer id = null;
+    public Integer id;
 }

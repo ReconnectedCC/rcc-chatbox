@@ -8,5 +8,5 @@ public class TellPacket extends ClientPacketBase {
     @Nullable
     public String name;
     @Nullable
-    public String mode = "markdown";
+    public String mode;
 }
