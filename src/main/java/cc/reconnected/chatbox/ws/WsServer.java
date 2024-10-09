@@ -251,4 +251,12 @@ public class WsServer extends WebSocketServer {
     public void closeAllClients(CloseCodes closeCode) {
         clients.forEach((conn, client) -> conn.close(closeCode.code, closeCode.message));
     }
+
+    public void closeLicenseClients(UUID license, CloseCodes closeCode) {
+        clients.entrySet().stream().filter(entry -> entry.getValue().license.uuid().equals(license))
+                .forEach(entry -> {
+                    var conn = entry.getKey();
+                    conn.close(closeCode.code, closeCode.message);
+                });
+    }
 }
