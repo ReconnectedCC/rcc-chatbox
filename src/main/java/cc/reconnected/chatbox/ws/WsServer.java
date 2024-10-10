@@ -44,7 +44,7 @@ public class WsServer extends WebSocketServer {
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
         InetAddress clientAddress = conn.getRemoteSocketAddress().getAddress();
-        if(handshake.hasFieldValue("X-Forwarded-For")) {
+        if (handshake.hasFieldValue("X-Forwarded-For")) {
             clientAddress = new InetAddressConverter().convert(handshake.getFieldValue("X-Forwarded-For"));
         }
 
@@ -63,14 +63,19 @@ public class WsServer extends WebSocketServer {
         UUID licenseUuid;
 
         if (licenseString.equals("guest")) {
-            if(!clientAddress.equals(guestAddress)) {
+            if (!clientAddress.equals(guestAddress)) {
                 conn.close(CloseCodes.EXTERNAL_GUESTS_NOT_ALLOWED.code, CloseCodes.EXTERNAL_GUESTS_NOT_ALLOWED.getErrorString());
                 return;
             }
 
             licenseUuid = LicenseManager.guestLicenseUuid;
         } else {
-            licenseUuid = UUID.fromString(licenseString);
+            try {
+                licenseUuid = UUID.fromString(licenseString);
+            } catch (IllegalArgumentException e) {
+                conn.close(CloseCodes.INVALID_LICENSE_KEY.code, CloseCodes.INVALID_LICENSE_KEY.getErrorString());
+                return;
+            }
         }
 
         License license;
@@ -133,13 +138,13 @@ public class WsServer extends WebSocketServer {
                     return;
                 }
 
-                if(sayPacket.text == null) {
+                if (sayPacket.text == null) {
                     var err = ClientErrors.MISSING_TEXT;
                     conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
                     return;
                 }
 
-                if(sayPacket.mode == null)
+                if (sayPacket.mode == null)
                     sayPacket.mode = "markdown";
 
                 if (!"markdown".equals(sayPacket.mode) && !"format".equals(sayPacket.mode)) {
@@ -149,8 +154,8 @@ public class WsServer extends WebSocketServer {
                 }
 
                 sayPacket.text = sayPacket.text.substring(0, Math.min(sayPacket.text.length(), messageMaxLength));
-                if(sayPacket.name != null) {
-                    sayPacket.name = sayPacket.name.trim().replace("\n","");
+                if (sayPacket.name != null) {
+                    sayPacket.name = sayPacket.name.trim().replace("\n", "");
                     sayPacket.name = sayPacket.name.substring(0, Math.min(sayPacket.name.length(), nameMaxLength));
                 }
 
@@ -166,19 +171,19 @@ public class WsServer extends WebSocketServer {
                     return;
                 }
 
-                if(tellPacket.user == null) {
+                if (tellPacket.user == null) {
                     var err = ClientErrors.MISSING_USER;
                     conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
                     return;
                 }
 
-                if(tellPacket.text == null) {
+                if (tellPacket.text == null) {
                     var err = ClientErrors.MISSING_TEXT;
                     conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
                     return;
                 }
 
-                if(tellPacket.mode == null)
+                if (tellPacket.mode == null)
                     tellPacket.mode = "markdown";
 
                 if (!"markdown".equals(tellPacket.mode) && !"format".equals(tellPacket.mode)) {
@@ -188,8 +193,8 @@ public class WsServer extends WebSocketServer {
                 }
 
                 tellPacket.text = tellPacket.text.substring(0, Math.min(tellPacket.text.length(), messageMaxLength));
-                if(tellPacket.name != null) {
-                    tellPacket.name = tellPacket.name.trim().replace("\n","");
+                if (tellPacket.name != null) {
+                    tellPacket.name = tellPacket.name.trim().replace("\n", "");
                     tellPacket.name = tellPacket.name.substring(0, Math.min(tellPacket.name.length(), nameMaxLength));
                 }
 
@@ -206,7 +211,13 @@ public class WsServer extends WebSocketServer {
     @Override
     public void onError(WebSocket conn, Exception ex) {
         if (conn != null) {
-            Chatbox.LOGGER.error("WebSocket client failure " + conn.getRemoteSocketAddress().getHostString(), ex.getMessage());
+            var address = conn.getRemoteSocketAddress().getAddress();
+            var client = clients.get(conn);
+            if (client != null) {
+                address = client.address;
+            }
+
+            Chatbox.LOGGER.error("WebSocket client failure {}: {}", address, ex);
         } else {
             Chatbox.LOGGER.error("WebSocket failure", ex);
         }

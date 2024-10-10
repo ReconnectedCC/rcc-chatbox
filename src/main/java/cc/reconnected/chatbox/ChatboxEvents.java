@@ -1,22 +1,16 @@
 package cc.reconnected.chatbox;
 
 import cc.reconnected.chatbox.api.events.ClientConnected;
-import cc.reconnected.chatbox.api.events.ChatboxSay;
-import cc.reconnected.chatbox.api.events.ChatboxTell;
 import cc.reconnected.chatbox.api.events.PlayerCommand;
 import cc.reconnected.chatbox.data.StateSaverAndLoader;
 import cc.reconnected.chatbox.license.Capability;
 import cc.reconnected.chatbox.models.DiscordUser;
-import cc.reconnected.chatbox.packets.serverPackets.ErrorPacket;
 import cc.reconnected.chatbox.packets.serverPackets.HelloPacket;
 import cc.reconnected.chatbox.packets.serverPackets.PlayersPacket;
-import cc.reconnected.chatbox.packets.serverPackets.SuccessPacket;
 import cc.reconnected.chatbox.packets.serverPackets.events.*;
 import cc.reconnected.chatbox.models.User;
 import cc.reconnected.chatbox.parsers.MarkdownParser;
 import cc.reconnected.chatbox.utils.DateUtils;
-import cc.reconnected.chatbox.utils.TextComponents;
-import cc.reconnected.chatbox.ws.ClientErrors;
 import cc.reconnected.chatbox.ws.CloseCodes;
 import cc.reconnected.chatbox.ws.WsServer;
 import cc.reconnected.discordbridge.events.DiscordMessage;
@@ -26,7 +20,6 @@ import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.kyori.adventure.text.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Style;
@@ -45,6 +38,7 @@ public class ChatboxEvents {
     private static MinecraftServer mcServer;
 
     public static void register() {
+        ClientPacketsHandler.register();
         ClientConnected.EVENT.register((conn, license, isGuest) -> {
             var rccServer = RccServer.getInstance();
             var playerData = rccServer.playerTable().getPlayerData(license.userId());
@@ -241,51 +235,6 @@ public class ChatboxEvents {
             }
 
             return false;
-        });
-
-        // TODO: add rate limit with queue up to max 5 pending messages
-
-        ChatboxSay.EVENT.register((client, packet) -> {
-            var ownerId = client.license.userId();
-            var owner = RccServer.getInstance().playerTable().getPlayerData(ownerId);
-            if (owner == null) // add error to ws
-                return;
-
-            var name = packet.name != null ? packet.name : owner.name();
-            var message = TextComponents.buildChatbotMessage(name, packet.text, packet.mode, owner);
-            mcServer.getPlayerManager().getPlayerList().forEach(player -> {
-                player.sendMessage(message);
-            });
-
-            client.webSocket.send(Chatbox.GSON.toJson(new SuccessPacket("message_sent", packet.id)));
-
-        });
-
-        ChatboxTell.EVENT.register((client, packet) -> {
-            var ownerId = client.license.userId();
-            var owner = RccServer.getInstance().playerTable().getPlayerData(ownerId);
-            if (owner == null) {
-                var err = ClientErrors.UNKNOWN_ERROR;
-                client.webSocket.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, packet.id)));
-                return;
-            }
-
-            var name = packet.name != null ? packet.name : owner.name();
-
-            var player = mcServer.getPlayerManager().getPlayer(packet.user);
-            if (player == null) {
-                var err = ClientErrors.UNKNOWN_USER;
-                client.webSocket.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, packet.id)));
-                return;
-            }
-
-            var message = Component.empty()
-                    .append(TextComponents.tellPrefix)
-                    .appendSpace()
-                    .append(TextComponents.buildChatbotMessage(name, packet.text, packet.mode, owner));
-            player.sendMessage(message);
-
-            client.webSocket.send(Chatbox.GSON.toJson(new SuccessPacket("message_sent", packet.id)));
         });
     }
 

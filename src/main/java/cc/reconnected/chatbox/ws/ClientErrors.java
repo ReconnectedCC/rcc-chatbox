@@ -8,6 +8,7 @@ public enum ClientErrors {
     MISSING_USER("The 'user' argument is required."),
     UNKNOWN_USER("That user is not online."),
     INVALID_MODE("The 'mode' argument is invalid."),
+    RATE_LIMITED("You got rate limited."),
     ;
 
     public final String message;
