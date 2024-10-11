@@ -12,6 +12,7 @@ import cc.reconnected.chatbox.packets.serverPackets.ErrorPacket;
 import cc.reconnected.chatbox.packets.clientPackets.ClientPacketBase;
 import cc.reconnected.chatbox.packets.clientPackets.SayPacket;
 import cc.reconnected.chatbox.packets.clientPackets.TellPacket;
+import cc.reconnected.chatbox.parsers.Formats;
 import joptsimple.util.InetAddressConverter;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
@@ -149,7 +150,7 @@ public class WsServer extends WebSocketServer {
                 if (sayPacket.mode == null)
                     sayPacket.mode = "markdown";
 
-                if (!"markdown".equals(sayPacket.mode) && !"format".equals(sayPacket.mode)) {
+                if (!Formats.available.contains(sayPacket.mode)) {
                     var err = ClientErrors.INVALID_MODE;
                     conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
                     return;
@@ -188,7 +189,7 @@ public class WsServer extends WebSocketServer {
                 if (tellPacket.mode == null)
                     tellPacket.mode = "markdown";
 
-                if (!"markdown".equals(tellPacket.mode) && !"format".equals(tellPacket.mode)) {
+                if (!Formats.available.contains(tellPacket.mode)) {
                     var err = ClientErrors.INVALID_MODE;
                     conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
                     return;

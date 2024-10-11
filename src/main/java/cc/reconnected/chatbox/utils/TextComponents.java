@@ -1,6 +1,7 @@
 package cc.reconnected.chatbox.utils;
 
 import cc.reconnected.chatbox.parsers.MarkdownParser;
+import cc.reconnected.chatbox.parsers.MiniMessageSerializer;
 import cc.reconnected.server.database.PlayerData;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.HoverEvent;
@@ -38,6 +39,9 @@ public class TextComponents {
 
             formattedLabel = json.deserialize(Text.Serializer.toJson(rawLabel));
             formattedContent = json.deserialize(Text.Serializer.toJson(rawContent));
+        } else if("minimessage".equals(type)) {
+            formattedLabel = MiniMessageSerializer.labelSerializer.deserialize(label);
+            formattedContent = MiniMessageSerializer.defaultSerializer.deserialize(content);
         } else {
             formattedContent = Component.text(content);
             formattedLabel = Component.text(label);
