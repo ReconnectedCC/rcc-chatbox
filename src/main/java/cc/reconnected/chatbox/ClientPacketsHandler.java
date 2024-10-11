@@ -7,6 +7,7 @@ import cc.reconnected.chatbox.packets.serverPackets.SuccessPacket;
 import cc.reconnected.chatbox.utils.TextComponents;
 import cc.reconnected.chatbox.ws.ClientErrors;
 import cc.reconnected.server.RccServer;
+import cc.reconnected.server.database.PlayerData;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.kyori.adventure.text.Component;
@@ -74,11 +75,9 @@ public class ClientPacketsHandler {
 
         ChatboxSay.EVENT.register((client, packet) -> {
             var ownerId = client.license.userId();
-            var owner = RccServer.getInstance().playerTable().getPlayerData(ownerId);
-            if (owner == null) // add error to ws
-                return;
+            var owner = PlayerData.getPlayer(ownerId);
 
-            var name = packet.name != null ? packet.name : owner.name();
+            var name = packet.name != null ? packet.name : owner.getEffectiveName();
             var message = TextComponents.buildChatbotMessage(name, packet.text, packet.mode, owner);
 
             var cbmsg = new ClientMessage(client.webSocket, packet.id != null ? packet.id : -1, MessageTypes.SAY, message, null);
@@ -93,14 +92,14 @@ public class ClientPacketsHandler {
 
         ChatboxTell.EVENT.register((client, packet) -> {
             var ownerId = client.license.userId();
-            var owner = RccServer.getInstance().playerTable().getPlayerData(ownerId);
+            var owner = PlayerData.getPlayer(ownerId);
             if (owner == null) {
                 var err = ClientErrors.UNKNOWN_ERROR;
                 client.webSocket.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, packet.id)));
                 return;
             }
 
-            var name = packet.name != null ? packet.name : owner.name();
+            var name = packet.name != null ? packet.name : owner.getEffectiveName();
 
             var player = mcServer.getPlayerManager().getPlayer(packet.user);
             if (player == null) {

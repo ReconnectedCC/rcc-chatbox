@@ -1,6 +1,9 @@
 package cc.reconnected.chatbox.license;
 
 import cc.reconnected.chatbox.Chatbox;
+import cc.reconnected.server.RccServer;
+import cc.reconnected.server.database.PlayerData;
+import com.sun.jdi.connect.spi.TransportService;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.SQLException;
@@ -11,6 +14,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class LicenseManager {
     public static final UUID guestLicenseUuid = new UUID(0, 0);
     public static final License guestLicense = new License(guestLicenseUuid, guestLicenseUuid);
+    public static final String nodePrefix = "chatbox";
+    public static class KEYS {
+        public static final String licenseUuid = nodePrefix + ".license_uuid";
+        public static final String capabilities = nodePrefix + ".capabilities";
+    }
 
     private final ConcurrentHashMap<UUID, License> cache = new ConcurrentHashMap<>();
 
@@ -35,28 +43,27 @@ public class LicenseManager {
             return cache.get(licenseId);
         }
 
-        try {
-            var conn = Chatbox.getInstance().database().connection();
-            var stmt = conn.prepareStatement("SELECT * FROM chatbox_licenses WHERE uuid = ?");
-            stmt.setObject(1, licenseId);
-            var rs = stmt.executeQuery();
-            if(!rs.next()) {
-                return null;
-            }
-
-            var uuid = rs.getString(1);
-            var userId = rs.getString(2);
-            var packedCapabilities = rs.getInt(3);
-
-            var license = buildLicense(uuid, userId, packedCapabilities);
-            cache.put(license.uuid(), license);
-
-            stmt.close();
-            return license;
-        } catch(SQLException e) {
-            Chatbox.LOGGER.error("Could not fetch license", e);
+        var serverState = Chatbox.getInstance().serverState();
+        if(!serverState.licenses.containsKey(licenseId))
             return null;
+
+        var ownerUuid = serverState.licenses.get(licenseId);
+        var playerData = PlayerData.getPlayer(ownerUuid);
+        var licenseUuid = playerData.get(KEYS.licenseUuid);
+        var capabilitiesStr = playerData.get(KEYS.capabilities);
+        int packedCapabilities = 0;
+        if(capabilitiesStr != null) {
+            try {
+                packedCapabilities = Integer.parseInt(capabilitiesStr);
+            } catch(NumberFormatException e) {
+                // do nothing
+            }
         }
+
+        var license = buildLicense(licenseUuid, ownerUuid.toString(), packedCapabilities);
+        cache.put(license.uuid(), license);
+
+        return license;
     }
 
     @Nullable
@@ -69,28 +76,23 @@ public class LicenseManager {
             return license;
         }
 
-        try{
-            var conn = Chatbox.getInstance().database().connection();
-            var stmt = conn.prepareStatement("SELECT * FROM chatbox_licenses WHERE userId = ?");
-            stmt.setObject(1, userId);
-            var rs = stmt.executeQuery();
-            if(!rs.next()) {
-                return null;
-            }
-
-            var uuid = rs.getString(1);
-            var dbUserId = rs.getString(2);
-            var packedCapabilities = rs.getInt(3);
-
-            license = buildLicense(uuid, dbUserId, packedCapabilities);
-            cache.put(license.uuid(), license);
-
-            stmt.close();
-            return license;
-        } catch(SQLException e) {
-            Chatbox.LOGGER.error("Could not fetch license", e);
+        var playerData = PlayerData.getPlayer(userId);
+        var licenseUuid = playerData.get(KEYS.licenseUuid);
+        if(licenseUuid == null)
             return null;
+        var capabilitiesStr = playerData.get(KEYS.capabilities);
+        int packedCapabilities = 0;
+        if(capabilitiesStr != null) {
+            try {
+                packedCapabilities = Integer.parseInt(capabilitiesStr);
+            } catch(NumberFormatException e) {
+                // do nothing
+            }
         }
+
+        license = buildLicense(licenseUuid, userId.toString(), packedCapabilities);
+        cache.put(license.uuid(), license);
+        return license;
     }
 
     public License createLicense(UUID userId, Set<Capability> capabilities) {
@@ -107,64 +109,51 @@ public class LicenseManager {
         license = new License(uuid, userId);
         license.capabilities().addAll(capabilities);
 
-        try {
-            var conn = Chatbox.getInstance().database().connection();
-            var stmt = conn.prepareStatement("INSERT INTO chatbox_licenses(uuid, userId, capabilities) VALUES (?, ?, ?);");
-            stmt.setObject(1, uuid);
-            stmt.setObject(2, userId);
-            stmt.setInt(3, Capability.pack(capabilities));
-            stmt.execute();
-            stmt.close();
+        var playerData = PlayerData.getPlayer(userId);
+        playerData.set(KEYS.licenseUuid, uuid.toString());
+        playerData.set(KEYS.capabilities, String.valueOf(Capability.pack(capabilities)));
+        Chatbox.getInstance().serverState().licenses.put(uuid, userId);
 
-            cache.put(uuid, license);
-            return license;
-        } catch (SQLException e) {
-            Chatbox.LOGGER.error("Could not create license", e);
-            return null;
-        }
+        cache.put(uuid, license);
+
+        return license;
     }
 
     public boolean deleteLicense(UUID licenseId) {
         if(licenseId.equals(guestLicenseUuid)) {
             return false;
         }
-        try {
-            var conn = Chatbox.getInstance().database().connection();
-            var stmt = conn.prepareStatement("DELETE FROM chatbox_licenses WHERE uuid = ?");
-            stmt.setObject(1, licenseId);
-            stmt.execute();
-            stmt.close();
 
-            cache.remove(licenseId);
-            return true;
-        } catch (SQLException e) {
-            Chatbox.LOGGER.error("Could not delete license", e);
+        var license = getLicense(licenseId);
+        if(license == null) {
             return false;
         }
+
+        var playerData = PlayerData.getPlayer(license.userId());
+        playerData.delete(KEYS.licenseUuid);
+        playerData.delete(KEYS.capabilities);
+
+        Chatbox.getInstance().serverState().licenses.remove(license.uuid());
+        cache.remove(license.uuid());
+        return true;
     }
 
     public boolean updateLicense(UUID licenseId, Set<Capability> capabilities) {
         if(licenseId.equals(guestLicenseUuid)) {
             return false;
         }
-        try {
-            var conn = Chatbox.getInstance().database().connection();
-            var stmt = conn.prepareStatement("UPDATE chatbox_licenses SET capabilities = ? WHERE uuid = ?");
-            stmt.setInt(1, Capability.pack(capabilities));
-            stmt.setObject(2, licenseId);
-            stmt.execute();
-            stmt.close();
-
-            if(cache.containsKey(licenseId)) {
-                var license = cache.get(licenseId);
-                license.capabilities().clear();
-                license.capabilities().addAll(capabilities);
-            }
-
-            return true;
-        } catch (SQLException e) {
-            Chatbox.LOGGER.error("Could not update license", e);
+        var license = getLicense(licenseId);
+        if(license == null) {
             return false;
         }
+
+        license.capabilities().clear();
+        license.capabilities().addAll(capabilities);
+        var playerData = PlayerData.getPlayer(license.userId());
+
+        playerData.set(KEYS.capabilities, String.valueOf(Capability.pack(capabilities)));
+        cache.put(license.uuid(), license);
+
+        return true;
     }
 }

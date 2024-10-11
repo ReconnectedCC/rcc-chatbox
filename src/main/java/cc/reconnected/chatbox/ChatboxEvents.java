@@ -15,6 +15,7 @@ import cc.reconnected.chatbox.ws.CloseCodes;
 import cc.reconnected.chatbox.ws.WsServer;
 import cc.reconnected.discordbridge.events.DiscordMessage;
 import cc.reconnected.server.RccServer;
+import cc.reconnected.server.database.PlayerData;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -41,20 +42,20 @@ public class ChatboxEvents {
         ClientPacketsHandler.register();
         ClientConnected.EVENT.register((conn, license, isGuest) -> {
             var rccServer = RccServer.getInstance();
-            var playerData = rccServer.playerTable().getPlayerData(license.userId());
+            var playerData = PlayerData.getPlayer(license.userId());
 
             var helloPacket = new HelloPacket();
             helloPacket.capabilities = license.capabilities().stream().map(c -> c.toString().toLowerCase()).toArray(String[]::new);
             helloPacket.guest = isGuest;
             if (!isGuest) {
-                helloPacket.licenseOwner = playerData.name();
+                helloPacket.licenseOwner = playerData.getEffectiveName();
 
                 var mcPlayer = mcServer.getPlayerManager().getPlayer(license.userId());
                 if (mcPlayer != null) {
                     helloPacket.licenseOwnerUser = User.create(mcPlayer);
                 } else {
                     helloPacket.licenseOwnerUser = new User();
-                    helloPacket.licenseOwnerUser.displayName = playerData.name();
+                    helloPacket.licenseOwnerUser.displayName = playerData.getEffectiveName();
                     helloPacket.licenseOwnerUser.uuid = license.userId().toString();
                 }
             }
@@ -70,23 +71,26 @@ public class ChatboxEvents {
 
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
             mcServer = server;
+        });
+
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             var wss = new WsServer(new InetSocketAddress(Chatbox.CONFIG.hostname(), Chatbox.CONFIG.port()));
 
             var wssThread = new Thread(wss::start);
             wssThread.start();
 
             Chatbox.getInstance().wss(wss);
-
-            Chatbox.getInstance().database().ensureDatabaseCreated();
         });
 
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
-            try {
-                var wss = Chatbox.getInstance().wss();
-                wss.closeAllClients(CloseCodes.SERVER_STOPPING);
-                wss.stop();
-            } catch (InterruptedException e) {
-                Chatbox.LOGGER.error("Failed to stop WebSocket server", e);
+            if (Chatbox.getInstance().wss() != null) {
+                try {
+                    var wss = Chatbox.getInstance().wss();
+                    wss.closeAllClients(CloseCodes.SERVER_STOPPING);
+                    wss.stop();
+                } catch (InterruptedException e) {
+                    Chatbox.LOGGER.error("Failed to stop WebSocket server", e);
+                }
             }
         });
 

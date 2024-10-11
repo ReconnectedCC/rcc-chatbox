@@ -19,7 +19,7 @@ public class TextComponents {
     public static final Style chatbotNameStyle = Style.style(NamedTextColor.WHITE);
 
     public static Component getChatbotName(Component name, PlayerData owner) {
-        var ownerMeta = Component.text("Owned by " + owner.name());
+        var ownerMeta = Component.text("Owned by " + owner.getEffectiveName());
         return name.hoverEvent(HoverEvent.showText(ownerMeta));
     }
 

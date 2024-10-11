@@ -12,6 +12,14 @@ import java.util.UUID;
 
 public class StateSaverAndLoader extends PersistentState {
     public HashMap<UUID, ChatboxPlayerData> players = new HashMap<>();
+
+    /**
+     * LicenseUUID -> PlayerUUID
+     * <p>
+     * Contains mappings of license tokens UUID to players UUID
+     */
+    public HashMap<UUID, UUID> licenses = new HashMap<>();
+
     @Override
     public NbtCompound writeNbt(NbtCompound nbt) {
         var playersNbt = new NbtCompound();
@@ -19,22 +27,33 @@ public class StateSaverAndLoader extends PersistentState {
             var playerNbt = new NbtCompound();
             playerNbt.putBoolean("spy", data.enableSpy);
             playersNbt.put(uuid.toString(), playerNbt);
-
         });
         nbt.put("players", playersNbt);
+
+        var licensesNbt = new NbtCompound();
+        licenses.forEach((license, playerId) -> {
+            licensesNbt.putUuid(license.toString(), playerId);
+        });
+        nbt.put("licenses", licensesNbt);
         return nbt;
     }
 
     public static StateSaverAndLoader createFromNbt(NbtCompound nbt) {
         var state = new StateSaverAndLoader();
 
-        NbtCompound playersNbt = nbt.getCompound("players");
+        var playersNbt = nbt.getCompound("players");
         playersNbt.getKeys().forEach(key -> {
             var playerData = new ChatboxPlayerData();
 
             playerData.enableSpy = playersNbt.getCompound(key).getBoolean("spy");
             UUID uuid = UUID.fromString(key);
             state.players.put(uuid, playerData);
+        });
+
+        var licensesNbt = nbt.getCompound("licenses");
+        licensesNbt.getKeys().forEach(license -> {
+            var playerUuid = licensesNbt.getUuid(license);
+            state.licenses.put(UUID.fromString(license), playerUuid);
         });
         return state;
     }
