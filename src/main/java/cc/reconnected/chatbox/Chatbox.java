@@ -1,5 +1,6 @@
 package cc.reconnected.chatbox;
 
+import cc.reconnected.chatbox.command.ChatboxCommand;
 import cc.reconnected.chatbox.data.StateSaverAndLoader;
 import com.google.gson.Gson;
 import cc.reconnected.chatbox.license.LicenseManager;

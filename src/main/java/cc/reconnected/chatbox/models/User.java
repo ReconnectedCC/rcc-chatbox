@@ -25,31 +25,32 @@ public class User {
     public static User create(ServerPlayerEntity player) {
         var user = new User();
 
+        var playerData = PlayerData.getPlayer(player);
+
         user.name = player.getEntityName();
         user.uuid = player.getUuidAsString();
         user.displayName = player.getDisplayName().getString();
-        // TODO: find a way to get rank of user
-        // possible values: default, admin
-        user.group = "default";
         user.world = player.getWorld().getRegistryKey().getValue().toString();
+        user.group = playerData.getPrimaryGroup();
 
-        var playerData = PlayerData.getPlayer(player.getUuid());
-        if (playerData != null) {
-            user.pronouns = playerData.get(PlayerData.KEYS.pronouns);
-            user.afk = false;
-            user.alt = playerData.getBoolean(PlayerData.KEYS.isAlt);
-            user.bot = playerData.getBoolean(PlayerData.KEYS.isBot);
+        user.pronouns = playerData.get(PlayerData.KEYS.pronouns);
+        user.afk = false;
+        user.alt = playerData.getBoolean(PlayerData.KEYS.isAlt);
+        user.bot = playerData.getBoolean(PlayerData.KEYS.isBot);
 
-            // TODO: link with supporter
-            user.supporter = 0;
 
-            user.linkedUser = null;
-            var discordId = playerData.get(PlayerData.KEYS.discordId);
-            if (discordId != null) {
-                var member = Bridge.getInstance().getClient().guild().getMember(UserSnowflake.fromId(discordId));
-                if (member != null) {
-                    user.linkedUser = DiscordUser.fromMember(member);
-                }
+        user.supporter = 0;
+        var supporterStr = playerData.get(PlayerData.KEYS.supporterLevel);
+        if (supporterStr != null) {
+            user.supporter = Integer.parseInt(supporterStr);
+        }
+
+        user.linkedUser = null;
+        var discordId = playerData.get(PlayerData.KEYS.discordId);
+        if (discordId != null) {
+            var member = Bridge.getInstance().getClient().guild().getMember(UserSnowflake.fromId(discordId));
+            if (member != null) {
+                user.linkedUser = DiscordUser.fromMember(member);
             }
         }
 
