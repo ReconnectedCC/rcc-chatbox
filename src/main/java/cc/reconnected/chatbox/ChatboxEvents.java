@@ -1,9 +1,11 @@
 package cc.reconnected.chatbox;
 
 import cc.reconnected.chatbox.api.events.ClientConnected;
+import cc.reconnected.chatbox.api.events.ClientDisconnected;
 import cc.reconnected.chatbox.api.events.PlayerCommand;
 import cc.reconnected.chatbox.data.StateSaverAndLoader;
 import cc.reconnected.chatbox.license.Capability;
+import cc.reconnected.chatbox.license.LicenseManager;
 import cc.reconnected.chatbox.models.DiscordUser;
 import cc.reconnected.chatbox.packets.serverPackets.HelloPacket;
 import cc.reconnected.chatbox.packets.serverPackets.PlayersPacket;
@@ -67,6 +69,10 @@ public class ChatboxEvents {
                 var msg = Chatbox.GSON.toJson(ChatboxEvents.createPlayersPacket());
                 conn.send(msg);
             }
+        });
+
+        ClientDisconnected.EVENT.register((conn, license, code, reason, remote) -> {
+            Chatbox.LicenseManager.clearCache(license.uuid());
         });
 
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {

@@ -156,4 +156,8 @@ public class LicenseManager {
 
         return true;
     }
+
+    public void clearCache(UUID licenseUuid) {
+        cache.remove(licenseUuid);
+    }
 }

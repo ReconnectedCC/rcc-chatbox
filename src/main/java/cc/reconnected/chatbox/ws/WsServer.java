@@ -4,6 +4,7 @@ import cc.reconnected.chatbox.Chatbox;
 import cc.reconnected.chatbox.api.events.ClientConnected;
 import cc.reconnected.chatbox.api.events.ChatboxSay;
 import cc.reconnected.chatbox.api.events.ChatboxTell;
+import cc.reconnected.chatbox.api.events.ClientDisconnected;
 import cc.reconnected.chatbox.license.Capability;
 import cc.reconnected.chatbox.license.License;
 import cc.reconnected.chatbox.license.LicenseManager;
@@ -100,7 +101,8 @@ public class WsServer extends WebSocketServer {
 
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-        clients.remove(conn);
+        var client = clients.remove(conn);
+        ClientDisconnected.EVENT.invoker().disconnect(conn, client.license, code, reason, remote);
     }
 
     @Override
