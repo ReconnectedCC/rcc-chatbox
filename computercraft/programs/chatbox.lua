@@ -1,3 +1,4 @@
+local completion = require("cc.completion")
 local args = { ... }
 
 local function printUsage()
@@ -32,7 +33,7 @@ if command == "register" then
 
     print()
     write("Do you want to reboot now? [y/N] ")
-    local ans = read()
+    local ans = read(nil, nil, function(text) return completion.choice(text, { "y", "n" }) end, "n")
     if ans:lower():gsub("%s+", "") == "y" then
         os.reboot()
     end
