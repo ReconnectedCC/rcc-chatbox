@@ -28,7 +28,7 @@ if command == "register" then
 
     print("Success!")
     print("Your chatbox license key has been changed.")
-    print("A reboot is required for ht changes to take effect.")
+    print("A reboot is required for the changes to take effect.")
 
     print()
     write("Do you want to reboot now? [y/N] ")
