@@ -2,7 +2,7 @@ local args = { ... }
 
 local function printUsage()
     print("Usage:")
-    print("  chatbox register <license>")
+    print("  chatbox register [<license>]")
     print("  chatbox register guest")
     print("  chatbox remove")
     print("Obtain a license with /chatbox")
@@ -18,11 +18,16 @@ local command = args[1]
 if command == "register" then
     local license = args[2]
     if not license then
+        print("Please paste the license key")
+        write("> ")
+        license = read("*")
+    end
+    license = license:gsub("%s+", "")
+    if not license or #license == 0 then
         printUsage()
         return
     end
 
-    license = license:gsub("%s+", "")
     settings.set("chatbox.license_key", license)
     settings.save(".settings")
 
