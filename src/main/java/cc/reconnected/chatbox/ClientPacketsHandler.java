@@ -112,7 +112,6 @@ public class ClientPacketsHandler {
                     .append(TextComponents.tellPrefix)
                     .appendSpace()
                     .append(TextComponents.buildChatbotMessage(name, packet.text, packet.mode, owner));
-            player.sendMessage(message);
 
             var cbmsg = new ClientMessage(client.webSocket, packet.id != null ? packet.id : -1, MessageTypes.TELL, message, player.getUuid());
             if(tryEnqueue(client.license.uuid(), cbmsg)) {
