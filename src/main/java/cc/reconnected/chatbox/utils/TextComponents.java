@@ -17,7 +17,10 @@ public class TextComponents {
             .append(Component.text("CB PM").color(NamedTextColor.DARK_GRAY).hoverEvent(HoverEvent.showText(Component.text("This message was privately sent to you by an automated chatbot."))))
             .append(Component.text("]", NamedTextColor.GRAY));
 
-    public static final Style chatbotNameStyle = Style.style(NamedTextColor.WHITE);
+    public static final Component sayPrefix = Component.empty()
+            .append(Component.text("[", NamedTextColor.GRAY))
+            .append(Component.text("CB").color(NamedTextColor.DARK_GRAY).hoverEvent(HoverEvent.showText(Component.text("This message was publicly sent by an automated chatbot."))))
+            .append(Component.text("]", NamedTextColor.GRAY));
 
     public static Component getChatbotName(Component name, PlayerData owner) {
         var ownerMeta = Component.text("Owned by " + owner.getEffectiveName());
@@ -26,25 +29,18 @@ public class TextComponents {
 
     public static Component buildChatbotMessage(String label, String content, String type, PlayerData owner) {
         content = content.trim();
-        label = label.trim();
-        Component formattedLabel;
+        Component formattedLabel = LegacyComponentSerializer.legacyAmpersand().deserialize(label.trim());
         Component formattedContent;
         if ("format".equals(type)) {
             formattedContent = LegacyComponentSerializer.legacyAmpersand().deserialize(content);
-            formattedLabel = LegacyComponentSerializer.legacyAmpersand().deserialize(label);
         } else if ("markdown".equals(type)) {
-            var rawLabel = MarkdownParser.nameParser.parseNode(label).toText();
             var rawContent = MarkdownParser.contentParser.parseNode(content).toText();
             var json = JSONComponentSerializer.json();
-
-            formattedLabel = json.deserialize(Text.Serializer.toJson(rawLabel));
             formattedContent = json.deserialize(Text.Serializer.toJson(rawContent));
         } else if("minimessage".equals(type)) {
-            formattedLabel = MiniMessageSerializer.labelSerializer.deserialize(label);
             formattedContent = MiniMessageSerializer.defaultSerializer.deserialize(content);
         } else {
             formattedContent = Component.text(content);
-            formattedLabel = Component.text(label);
         }
         return Component.empty()
                 .append(getChatbotName(formattedLabel, owner))

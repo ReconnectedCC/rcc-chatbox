@@ -22,17 +22,8 @@ public class MiniMessageSerializer {
             StandardTags.translatable(),
             StandardTags.insertion()
     );
-    public static final Set<TagResolver> labelTags = Set.of(
-            StandardTags.color(),
-            StandardTags.decorations(),
-            StandardTags.gradient(),
-            StandardTags.rainbow(),
-            StandardTags.reset(),
-            StandardTags.transition()
-    );
 
     public static final MiniMessage defaultSerializer = createSerializer(defaultTags);
-    public static final MiniMessage labelSerializer = createSerializer(labelTags);
 
     public static MiniMessage createSerializer(Collection<TagResolver> tags) {
         return MiniMessage.builder()

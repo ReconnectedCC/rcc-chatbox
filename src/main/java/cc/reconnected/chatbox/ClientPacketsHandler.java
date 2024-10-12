@@ -78,10 +78,13 @@ public class ClientPacketsHandler {
             var owner = PlayerData.getPlayer(ownerId);
 
             var name = packet.name != null ? packet.name : owner.getEffectiveName();
-            var message = TextComponents.buildChatbotMessage(name, packet.text, packet.mode, owner);
+            var message = Component.empty()
+                    .append(TextComponents.sayPrefix)
+                    .appendSpace()
+                    .append(TextComponents.buildChatbotMessage(name, packet.text, packet.mode, owner));
 
-            var cbmsg = new ClientMessage(client.webSocket, packet.id != null ? packet.id : -1, MessageTypes.SAY, message, null);
-            if(tryEnqueue(client.license.uuid(), cbmsg)) {
+            var fullMessage = new ClientMessage(client.webSocket, packet.id != null ? packet.id : -1, MessageTypes.SAY, message, null);
+            if(tryEnqueue(client.license.uuid(), fullMessage)) {
                 client.webSocket.send(Chatbox.GSON.toJson(new SuccessPacket("message_queued", packet.id)));
             } else {
                 var err = ClientErrors.RATE_LIMITED;
@@ -113,8 +116,8 @@ public class ClientPacketsHandler {
                     .appendSpace()
                     .append(TextComponents.buildChatbotMessage(name, packet.text, packet.mode, owner));
 
-            var cbmsg = new ClientMessage(client.webSocket, packet.id != null ? packet.id : -1, MessageTypes.TELL, message, player.getUuid());
-            if(tryEnqueue(client.license.uuid(), cbmsg)) {
+            var fullMessage = new ClientMessage(client.webSocket, packet.id != null ? packet.id : -1, MessageTypes.TELL, message, player.getUuid());
+            if(tryEnqueue(client.license.uuid(), fullMessage)) {
                 client.webSocket.send(Chatbox.GSON.toJson(new SuccessPacket("message_queued", packet.id)));
             } else {
                 var err = ClientErrors.RATE_LIMITED;

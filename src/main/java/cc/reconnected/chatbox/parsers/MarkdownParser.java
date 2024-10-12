@@ -15,15 +15,7 @@ public class MarkdownParser {
             MarkdownLiteParserV1.MarkdownFormat.URL
     };
 
-    public static final MarkdownFormat[] NAME = new MarkdownFormat[] {
-            MarkdownLiteParserV1.MarkdownFormat.BOLD,
-            MarkdownLiteParserV1.MarkdownFormat.ITALIC,
-            MarkdownLiteParserV1.MarkdownFormat.UNDERLINE,
-            MarkdownLiteParserV1.MarkdownFormat.STRIKETHROUGH,
-    };
-
     public static final NodeParser contentParser = createParser(ALL);
-    public static final NodeParser nameParser = createParser(NAME);
 
     public static NodeParser createParser(MarkdownFormat[] capabilities) {
         return new MarkdownLiteParserV1(
