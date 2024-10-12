@@ -5,7 +5,10 @@ import cc.reconnected.server.RccServer;
 import cc.reconnected.server.database.PlayerData;
 import net.dv8tion.jda.api.entities.UserSnowflake;
 import net.minecraft.server.network.ServerPlayerEntity;
+import org.apache.logging.log4j.core.jmx.Server;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.UUID;
 
 public class User {
     public String type = "ingame";
@@ -22,22 +25,19 @@ public class User {
     @Nullable
     public DiscordUser linkedUser;
 
-    public static User create(ServerPlayerEntity player) {
-        var user = new User();
+    private static void fillInData(User user, @Nullable ServerPlayerEntity entity) {
+        PlayerData playerData;
+        if(entity != null) {
+            playerData = PlayerData.getPlayer(entity);
+        } else {
+            playerData = PlayerData.getPlayer(UUID.fromString(user.uuid));
+        }
 
-        var playerData = PlayerData.getPlayer(player);
-
-        user.name = player.getEntityName();
-        user.uuid = player.getUuidAsString();
-        user.displayName = player.getDisplayName().getString();
-        user.world = player.getWorld().getRegistryKey().getValue().toString();
         user.group = playerData.getPrimaryGroup();
-
         user.pronouns = playerData.get(PlayerData.KEYS.pronouns);
         user.afk = false;
         user.alt = playerData.getBoolean(PlayerData.KEYS.isAlt);
         user.bot = playerData.getBoolean(PlayerData.KEYS.isBot);
-
 
         user.supporter = 0;
         var supporterStr = playerData.get(PlayerData.KEYS.supporterLevel);
@@ -53,6 +53,33 @@ public class User {
                 user.linkedUser = DiscordUser.fromMember(member);
             }
         }
+    }
+
+    public static User create(ServerPlayerEntity player) {
+        var user = new User();
+
+        user.name = player.getEntityName();
+        user.uuid = player.getUuidAsString();
+        user.displayName = player.getDisplayName().getString();
+        user.world = player.getWorld().getRegistryKey().getValue().toString();
+
+        fillInData(user, player);
+
+        return user;
+    }
+
+
+    public static @Nullable User tryGet(UUID playerUuid) {
+        var user = new User();
+
+        var playerData = PlayerData.getPlayer(playerUuid);
+
+        user.uuid = playerUuid.toString();
+        user.name = playerData.getEffectiveName();
+        user.displayName = playerData.getEffectiveName();
+        user.world = null;
+
+        fillInData(user, null);
 
         return user;
     }

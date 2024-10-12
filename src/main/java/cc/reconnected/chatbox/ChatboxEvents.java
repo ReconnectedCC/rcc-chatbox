@@ -43,7 +43,6 @@ public class ChatboxEvents {
     public static void register() {
         ClientPacketsHandler.register();
         ClientConnected.EVENT.register((conn, license, isGuest) -> {
-            var rccServer = RccServer.getInstance();
             var playerData = PlayerData.getPlayer(license.userId());
 
             var helloPacket = new HelloPacket();
@@ -56,10 +55,9 @@ public class ChatboxEvents {
                 if (mcPlayer != null) {
                     helloPacket.licenseOwnerUser = User.create(mcPlayer);
                 } else {
-                    helloPacket.licenseOwnerUser = new User();
-                    helloPacket.licenseOwnerUser.displayName = playerData.getEffectiveName();
-                    helloPacket.licenseOwnerUser.uuid = license.userId().toString();
+                    helloPacket.licenseOwnerUser = User.tryGet(license.userId());
                 }
+                license.user = helloPacket.licenseOwnerUser;
             }
 
             var packetJson = Chatbox.GSON.toJson(helloPacket);
