@@ -103,6 +103,9 @@ public class WsServer extends WebSocketServer {
 
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
+        if(!clients.containsKey(conn)) {
+            return;
+        }
         var client = clients.remove(conn);
         ClientDisconnected.EVENT.invoker().disconnect(conn, client.license, code, reason, remote);
     }
