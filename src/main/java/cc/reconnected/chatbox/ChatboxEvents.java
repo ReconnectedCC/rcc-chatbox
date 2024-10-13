@@ -27,6 +27,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 import java.net.InetSocketAddress;
+import java.time.OffsetDateTime;
 import java.util.*;
 
 public class ChatboxEvents {
@@ -165,7 +166,15 @@ public class ChatboxEvents {
             packet.discordId = message.getId();
             packet.discordUser = user;
             packet.edited = isEdited;
-            packet.time = DateUtils.getTime(new Date((isEdited ? message.getTimeEdited() : message.getTimeCreated()).toInstant().toEpochMilli()));
+
+            var messageOffsetDate= isEdited ? message.getTimeEdited() : message.getTimeCreated();
+            Date messageDate;
+            if(messageOffsetDate != null) {
+                messageDate = new Date(messageOffsetDate.toInstant().toEpochMilli());
+            } else {
+                messageDate = new Date();
+            }
+            packet.time = DateUtils.getTime(messageDate);
 
             Chatbox.getInstance().wss().broadcastEvent(packet, Capability.READ);
         });
