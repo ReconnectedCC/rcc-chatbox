@@ -11,14 +11,14 @@ import java.util.HashMap;
 import java.util.UUID;
 
 public class StateSaverAndLoader extends PersistentState {
-    public HashMap<UUID, ChatboxPlayerData> players = new HashMap<>();
+    public final HashMap<UUID, ChatboxPlayerData> players = new HashMap<>();
 
     /**
      * LicenseUUID -> PlayerUUID
      * <p>
      * Contains mappings of license tokens UUID to players UUID
      */
-    public HashMap<UUID, UUID> licenses = new HashMap<>();
+    public final HashMap<UUID, UUID> licenses = new HashMap<>();
 
     @Override
     public NbtCompound writeNbt(NbtCompound nbt) {
@@ -31,9 +31,7 @@ public class StateSaverAndLoader extends PersistentState {
         nbt.put("players", playersNbt);
 
         var licensesNbt = new NbtCompound();
-        licenses.forEach((license, playerId) -> {
-            licensesNbt.putUuid(license.toString(), playerId);
-        });
+        licenses.forEach((license, playerId) -> licensesNbt.putUuid(license.toString(), playerId));
         nbt.put("licenses", licensesNbt);
         return nbt;
     }
@@ -71,7 +69,6 @@ public class StateSaverAndLoader extends PersistentState {
 
     public static ChatboxPlayerData getPlayerState(LivingEntity player) {
         var serverState = getServerState(player.getWorld().getServer());
-        var playerState = serverState.players.computeIfAbsent(player.getUuid(), uuid -> new ChatboxPlayerData());
-        return playerState;
+        return serverState.players.computeIfAbsent(player.getUuid(), uuid -> new ChatboxPlayerData());
     }
 }

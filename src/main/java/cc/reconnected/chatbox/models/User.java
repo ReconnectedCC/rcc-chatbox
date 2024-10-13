@@ -1,11 +1,9 @@
 package cc.reconnected.chatbox.models;
 
 import cc.reconnected.discordbridge.Bridge;
-import cc.reconnected.server.RccServer;
 import cc.reconnected.server.database.PlayerData;
 import net.dv8tion.jda.api.entities.UserSnowflake;
 import net.minecraft.server.network.ServerPlayerEntity;
-import org.apache.logging.log4j.core.jmx.Server;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
@@ -69,7 +67,7 @@ public class User {
     }
 
 
-    public static @Nullable User tryGet(UUID playerUuid) {
+    public static User tryGet(UUID playerUuid) {
         var user = new User();
 
         var playerData = PlayerData.getPlayer(playerUuid);

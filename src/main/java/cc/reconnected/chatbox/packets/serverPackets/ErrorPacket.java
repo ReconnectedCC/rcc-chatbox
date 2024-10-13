@@ -3,8 +3,8 @@ package cc.reconnected.chatbox.packets.serverPackets;
 import org.jetbrains.annotations.Nullable;
 
 public class ErrorPacket extends PacketBase {
-    public String error;
-    public String message;
+    public final String error;
+    public final String message;
 
     public ErrorPacket(String error, String message, @Nullable Integer id) {
         this.type = "error";

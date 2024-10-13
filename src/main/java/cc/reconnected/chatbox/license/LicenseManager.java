@@ -1,12 +1,9 @@
 package cc.reconnected.chatbox.license;
 
 import cc.reconnected.chatbox.Chatbox;
-import cc.reconnected.server.RccServer;
 import cc.reconnected.server.database.PlayerData;
-import com.sun.jdi.connect.spi.TransportService;
 import org.jetbrains.annotations.Nullable;
 
-import java.sql.SQLException;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;

@@ -19,11 +19,13 @@ public class SpySubCommand {
         return literal("spy")
                 .requires(Permissions.require("chatbox.spy", true))
                 .executes(context -> {
-                    if(!context.getSource().isExecutedByPlayer()) {
+                    if (!context.getSource().isExecutedByPlayer()) {
                         context.getSource().sendFeedback(() -> Text.literal("This command can only be executed by players!"), false);
                         return 0;
                     }
                     final var player = context.getSource().getPlayer();
+                    // checked for player presence above
+                    //noinspection DataFlowIssue
                     var playerState = StateSaverAndLoader.getPlayerState(player);
                     playerState.enableSpy = !playerState.enableSpy;
                     ChatboxEvents.spyingPlayers.put(player.getUuid(), playerState.enableSpy);

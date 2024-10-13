@@ -35,6 +35,7 @@ public class TextComponents {
     public static Component formatContent(String content, @Nullable String type) {
         content = content.trim();
         Component formattedContent;
+        type = type != null ? type : "unknown";
         switch (type) {
             case "format" -> formattedContent = legacySerializer.deserialize(content);
             case "markdown" -> {

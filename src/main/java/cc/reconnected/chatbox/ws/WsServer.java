@@ -28,8 +28,8 @@ public class WsServer extends WebSocketServer {
     public static final Pattern PATH_LICENSE = Pattern.compile("^/([0-9a-z-]+)$", Pattern.CASE_INSENSITIVE);
     private final HashMap<WebSocket, ChatboxClient> clients = new HashMap<>();
     private final InetAddress guestAddress;
-    public static int messageMaxLength = 1024;
-    public static int nameMaxLength = 64;
+    public static final int messageMaxLength = 1024;
+    public static final int nameMaxLength = 64;
 
     public HashMap<WebSocket, ChatboxClient> clients() {
         return clients;

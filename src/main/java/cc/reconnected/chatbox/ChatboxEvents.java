@@ -27,7 +27,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 import java.net.InetSocketAddress;
-import java.time.OffsetDateTime;
 import java.util.*;
 
 public class ChatboxEvents {
@@ -67,13 +66,11 @@ public class ChatboxEvents {
             }
         });
 
-        ClientConnectionEvents.DISCONNECT.register((conn, license, code, reason, remote) -> {
-            Chatbox.LicenseManager.clearCache(license.uuid());
-        });
+        ClientConnectionEvents.DISCONNECT.register((conn, license, code, reason, remote) ->
+                Chatbox.LicenseManager.clearCache(license.uuid()));
 
-        ServerLifecycleEvents.SERVER_STARTING.register(server -> {
-            mcServer = server;
-        });
+        ServerLifecycleEvents.SERVER_STARTING.register(server ->
+                mcServer = server);
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             var wss = new WsServer(new InetSocketAddress(Chatbox.CONFIG.hostname(), Chatbox.CONFIG.port()));
@@ -236,15 +233,19 @@ public class ChatboxEvents {
             PlayerCommandEvent.EVENT.invoker().onCommand(sender, command, args, isOwnerOnly);
 
             if (!isOwnerOnly) {
-                var playerManager = sender.getServer().getPlayerManager();
+                var server = sender.getServer();
+                if(server == null)
+                    return true;
+
+                var playerManager = server.getPlayerManager();
                 var text = Text
                         .literal(sender.getName().getString() + ": ").setStyle(Style.EMPTY.withColor(Formatting.DARK_GRAY))
                         .append(Text.literal(content).setStyle(Style.EMPTY.withColor(Formatting.GRAY)));
-                spyingPlayers.forEach((uuid, isSpying) -> {
-                    if (!isSpying)
-                        return;
-                    var player = playerManager.getPlayer(uuid);
-                    player.sendMessage(text, false);
+
+                playerManager.getPlayerList().forEach(player -> {
+                    if(spyingPlayers.containsKey(player.getUuid()) && spyingPlayers.get(player.getUuid())) {
+                        player.sendMessage(text, false);
+                    }
                 });
             }
 

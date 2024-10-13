@@ -62,8 +62,8 @@ public class ClientPacketsHandler {
                     continue;
 
                 var chatboxChatPacket = new ChatboxChatEvent();
-                chatboxChatPacket.text = PlainTextComponentSerializer.plainText().serialize(msg.content);
-                chatboxChatPacket.name = PlainTextComponentSerializer.plainText().serialize(msg.label);
+                chatboxChatPacket.text = PlainTextComponentSerializer.plainText().serialize(Objects.requireNonNull(msg.content));
+                chatboxChatPacket.name = PlainTextComponentSerializer.plainText().serialize(Objects.requireNonNull(msg.label));
                 chatboxChatPacket.rawText = msg.sayPacket.text;
                 chatboxChatPacket.rawName = msg.sayPacket.name != null ? msg.sayPacket.name : chatboxChatPacket.name;
                 // funky stuff
@@ -86,6 +86,15 @@ public class ClientPacketsHandler {
 
                 msg.conn.send(Chatbox.GSON.toJson(new SuccessPacket("message_sent", msg.id)));
             }
+        }
+    }
+
+    private static String enqueueAndResult(UUID licenseId, ClientMessage message, int id) {
+        if (tryEnqueue(licenseId, message)) {
+            return Chatbox.GSON.toJson(new SuccessPacket("message_queued", id));
+        } else {
+            var err = ClientErrors.RATE_LIMITED;
+            return Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id));
         }
     }
 
@@ -116,23 +125,13 @@ public class ClientPacketsHandler {
                     label,
                     content
             );
-            if (tryEnqueue(client.license.uuid(), fullMessage)) {
-                client.webSocket.send(Chatbox.GSON.toJson(new SuccessPacket("message_queued", packet.id)));
-            } else {
-                var err = ClientErrors.RATE_LIMITED;
-                client.webSocket.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, packet.id)));
-            }
 
+            client.webSocket.send(enqueueAndResult(client.license.uuid(), fullMessage, packet.id));
         });
 
         ChatboxMessageEvents.TELL.register((client, packet) -> {
             var ownerId = client.license.userId();
             var owner = PlayerData.getPlayer(ownerId);
-            if (owner == null) {
-                var err = ClientErrors.UNKNOWN_ERROR;
-                client.webSocket.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, packet.id)));
-                return;
-            }
 
             var player = mcServer.getPlayerManager().getPlayer(packet.user);
             if (player == null) {
@@ -159,12 +158,7 @@ public class ClientPacketsHandler {
                     client.license.user,
                     null, null, null
             );
-            if (tryEnqueue(client.license.uuid(), fullMessage)) {
-                client.webSocket.send(Chatbox.GSON.toJson(new SuccessPacket("message_queued", packet.id)));
-            } else {
-                var err = ClientErrors.RATE_LIMITED;
-                client.webSocket.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, packet.id)));
-            }
+            client.webSocket.send(enqueueAndResult(client.license.uuid(), fullMessage, packet.id));
         });
     }
 

@@ -17,7 +17,7 @@ public class Chatbox implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
     public static final cc.reconnected.chatbox.ChatboxConfig CONFIG = cc.reconnected.chatbox.ChatboxConfig.createAndLoad();
     public static final Gson GSON = new Gson();
-    public static LicenseManager LicenseManager = new LicenseManager();
+    public static final LicenseManager LicenseManager = new LicenseManager();
 
     private static Chatbox INSTANCE;
 
@@ -48,9 +48,7 @@ public class Chatbox implements ModInitializer {
     public void onInitialize() {
         CommandRegistrationCallback.EVENT.register(ChatboxCommand::register);
 
-        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-            serverState = StateSaverAndLoader.getServerState(server);
-        });
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> serverState = StateSaverAndLoader.getServerState(server));
 
         ChatboxEvents.register();
     }
