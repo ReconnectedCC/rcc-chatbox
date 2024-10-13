@@ -13,8 +13,11 @@ import cc.reconnected.chatbox.parsers.MarkdownParser;
 import cc.reconnected.chatbox.utils.DateUtils;
 import cc.reconnected.chatbox.ws.CloseCodes;
 import cc.reconnected.chatbox.ws.WsServer;
-import cc.reconnected.discordbridge.events.DiscordMessage;
+import cc.reconnected.discordbridge.events.DiscordMessageEvents;
 import cc.reconnected.server.database.PlayerData;
+import cc.reconnected.server.events.PlayerActivityEvents;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -154,27 +157,8 @@ public class ChatboxEvents {
         });
 
         // discord chat events
-        DiscordMessage.MESSAGE_CREATE.register((message, member, isEdited) -> {
-            var user = DiscordUser.fromMember(member);
-            var packet = new DiscordChatEvent();
-            packet.text = message.getContentStripped();
-            packet.rawText = message.getContentRaw();
-            packet.renderedText = Text.Serializer.toJsonTree(MarkdownParser.contentParser.parseNode(message.getContentDisplay()).toText());
-            packet.discordId = message.getId();
-            packet.discordUser = user;
-            packet.edited = isEdited;
-
-            var messageOffsetDate= isEdited ? message.getTimeEdited() : message.getTimeCreated();
-            Date messageDate;
-            if(messageOffsetDate != null) {
-                messageDate = new Date(messageOffsetDate.toInstant().toEpochMilli());
-            } else {
-                messageDate = new Date();
-            }
-            packet.time = DateUtils.getTime(messageDate);
-
-            Chatbox.getInstance().wss().broadcastEvent(packet, Capability.READ);
-        });
+        DiscordMessageEvents.MESSAGE_CREATE.register((message, member) -> emitDiscordChatEvent(message, member, false));
+        DiscordMessageEvents.MESSAGE_EDIT.register((message, member) -> emitDiscordChatEvent(message, member, true));
 
         // chat messages
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
@@ -234,7 +218,7 @@ public class ChatboxEvents {
 
             if (!isOwnerOnly) {
                 var server = sender.getServer();
-                if(server == null)
+                if (server == null)
                     return true;
 
                 var playerManager = server.getPlayerManager();
@@ -243,7 +227,7 @@ public class ChatboxEvents {
                         .append(Text.literal(content).setStyle(Style.EMPTY.withColor(Formatting.GRAY)));
 
                 playerManager.getPlayerList().forEach(player -> {
-                    if(spyingPlayers.containsKey(player.getUuid()) && spyingPlayers.get(player.getUuid())) {
+                    if (spyingPlayers.containsKey(player.getUuid()) && spyingPlayers.get(player.getUuid())) {
                         player.sendMessage(text, false);
                     }
                 });
@@ -251,6 +235,44 @@ public class ChatboxEvents {
 
             return false;
         });
+
+        PlayerActivityEvents.AFK.register((player, server) -> {
+            var packet = new AfkEvent();
+            packet.user = User.create(player);
+            packet.time = DateUtils.getTime(new Date());
+
+            Chatbox.getInstance().wss().broadcastEvent(packet, Capability.READ);
+        });
+
+        PlayerActivityEvents.AFK_RETURN.register((player, server) -> {
+            var packet = new AfkEvent();
+            packet.user = User.create(player);
+            packet.time = DateUtils.getTime(new Date());
+
+            Chatbox.getInstance().wss().broadcastEvent(packet, Capability.READ);
+        });
+    }
+
+    private static void emitDiscordChatEvent(Message message, Member member, boolean isEdited) {
+        var user = DiscordUser.fromMember(member);
+        var packet = new DiscordChatEvent();
+        packet.text = message.getContentStripped();
+        packet.rawText = message.getContentRaw();
+        packet.renderedText = Text.Serializer.toJsonTree(MarkdownParser.contentParser.parseNode(message.getContentDisplay()).toText());
+        packet.discordId = message.getId();
+        packet.discordUser = user;
+        packet.edited = isEdited;
+
+        var messageOffsetDate = isEdited ? message.getTimeEdited() : message.getTimeCreated();
+        Date messageDate;
+        if (messageOffsetDate != null) {
+            messageDate = new Date(messageOffsetDate.toInstant().toEpochMilli());
+        } else {
+            messageDate = new Date();
+        }
+        packet.time = DateUtils.getTime(messageDate);
+
+        Chatbox.getInstance().wss().broadcastEvent(packet, Capability.READ);
     }
 
     public static PlayersPacket createPlayersPacket(List<ServerPlayerEntity> list) {

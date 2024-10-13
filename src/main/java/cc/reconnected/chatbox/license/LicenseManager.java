@@ -12,6 +12,7 @@ public class LicenseManager {
     public static final UUID guestLicenseUuid = new UUID(0, 0);
     public static final License guestLicense = new License(guestLicenseUuid, guestLicenseUuid);
     public static final String nodePrefix = "chatbox";
+
     public static class KEYS {
         public static final String licenseUuid = nodePrefix + ".license_uuid";
         public static final String capabilities = nodePrefix + ".capabilities";
@@ -33,7 +34,7 @@ public class LicenseManager {
 
     @Nullable
     public License getLicense(UUID licenseId) {
-        if(licenseId.equals(guestLicenseUuid)) {
+        if (licenseId.equals(guestLicenseUuid)) {
             return guestLicense;
         }
         if (cache.containsKey(licenseId)) {
@@ -41,7 +42,7 @@ public class LicenseManager {
         }
 
         var serverState = Chatbox.getInstance().serverState();
-        if(!serverState.licenses.containsKey(licenseId))
+        if (!serverState.licenses.containsKey(licenseId))
             return null;
 
         var ownerUuid = serverState.licenses.get(licenseId);
@@ -49,10 +50,10 @@ public class LicenseManager {
         var licenseUuid = playerData.get(KEYS.licenseUuid);
         var capabilitiesStr = playerData.get(KEYS.capabilities);
         int packedCapabilities = 0;
-        if(capabilitiesStr != null) {
+        if (capabilitiesStr != null) {
             try {
                 packedCapabilities = Integer.parseInt(capabilitiesStr);
-            } catch(NumberFormatException e) {
+            } catch (NumberFormatException e) {
                 // do nothing
             }
         }
@@ -65,7 +66,7 @@ public class LicenseManager {
 
     @Nullable
     public License getLicenseFromUser(UUID userId) {
-        if(userId.equals(guestLicenseUuid)) {
+        if (userId.equals(guestLicenseUuid)) {
             return guestLicense;
         }
         var license = cache.values().parallelStream().filter(l -> l.userId() == userId).findFirst().orElse(null);
@@ -75,14 +76,14 @@ public class LicenseManager {
 
         var playerData = PlayerData.getPlayer(userId);
         var licenseUuid = playerData.get(KEYS.licenseUuid);
-        if(licenseUuid == null)
+        if (licenseUuid == null)
             return null;
         var capabilitiesStr = playerData.get(KEYS.capabilities);
         int packedCapabilities = 0;
-        if(capabilitiesStr != null) {
+        if (capabilitiesStr != null) {
             try {
                 packedCapabilities = Integer.parseInt(capabilitiesStr);
-            } catch(NumberFormatException e) {
+            } catch (NumberFormatException e) {
                 // do nothing
             }
         }
@@ -93,7 +94,7 @@ public class LicenseManager {
     }
 
     public License createLicense(UUID userId, Set<Capability> capabilities) {
-        if(userId.equals(guestLicenseUuid)) {
+        if (userId.equals(guestLicenseUuid)) {
             return guestLicense;
         }
         var license = getLicenseFromUser(userId);
@@ -107,8 +108,9 @@ public class LicenseManager {
         license.capabilities().addAll(capabilities);
 
         var playerData = PlayerData.getPlayer(userId);
-        playerData.set(KEYS.licenseUuid, uuid.toString());
-        playerData.set(KEYS.capabilities, String.valueOf(Capability.pack(capabilities)));
+        playerData.set(KEYS.licenseUuid, uuid.toString()).join();
+        playerData.set(KEYS.capabilities, String.valueOf(Capability.pack(capabilities))).join();
+
         Chatbox.getInstance().serverState().licenses.put(uuid, userId);
 
         cache.put(uuid, license);
@@ -117,18 +119,18 @@ public class LicenseManager {
     }
 
     public boolean deleteLicense(UUID licenseId) {
-        if(licenseId.equals(guestLicenseUuid)) {
+        if (licenseId.equals(guestLicenseUuid)) {
             return false;
         }
 
         var license = getLicense(licenseId);
-        if(license == null) {
+        if (license == null) {
             return false;
         }
 
         var playerData = PlayerData.getPlayer(license.userId());
-        playerData.delete(KEYS.licenseUuid);
-        playerData.delete(KEYS.capabilities);
+        playerData.delete(KEYS.licenseUuid).join();
+        playerData.delete(KEYS.capabilities).join();
 
         Chatbox.getInstance().serverState().licenses.remove(license.uuid());
         cache.remove(license.uuid());
@@ -136,11 +138,11 @@ public class LicenseManager {
     }
 
     public boolean updateLicense(UUID licenseId, Set<Capability> capabilities) {
-        if(licenseId.equals(guestLicenseUuid)) {
+        if (licenseId.equals(guestLicenseUuid)) {
             return false;
         }
         var license = getLicense(licenseId);
-        if(license == null) {
+        if (license == null) {
             return false;
         }
 
@@ -148,7 +150,7 @@ public class LicenseManager {
         license.capabilities().addAll(capabilities);
         var playerData = PlayerData.getPlayer(license.userId());
 
-        playerData.set(KEYS.capabilities, String.valueOf(Capability.pack(capabilities)));
+        playerData.set(KEYS.capabilities, String.valueOf(Capability.pack(capabilities))).join();
         cache.put(license.uuid(), license);
 
         return true;
