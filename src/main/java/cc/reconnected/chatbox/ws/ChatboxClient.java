@@ -7,9 +7,9 @@ import java.net.InetAddress;
 
 
 public class ChatboxClient {
-    public WebSocket webSocket;
-    public License license;
-    public InetAddress address;
+    public final WebSocket webSocket;
+    public final License license;
+    public final InetAddress address;
 
     public ChatboxClient(License license, WebSocket webSocket, InetAddress address) {
         this.license = license;

@@ -85,6 +85,7 @@ public class WsServer extends WebSocketServer {
             license = Chatbox.LicenseManager.getLicense(licenseUuid);
         } catch (Exception e) {
             conn.close(CloseCodes.FATAL_ERROR.code, CloseCodes.FATAL_ERROR.getErrorString());
+            Chatbox.LOGGER.error("Failed to load license", e);
             return;
         }
 
@@ -220,7 +221,8 @@ public class WsServer extends WebSocketServer {
                 address = client.address;
             }
 
-            Chatbox.LOGGER.error("WebSocket client failure {}: {}", address, ex);
+            Chatbox.LOGGER.error("WebSocket client failure {}", address);
+            Chatbox.LOGGER.error("Exception thrown:", ex);
         } else {
             Chatbox.LOGGER.error("WebSocket failure", ex);
         }
