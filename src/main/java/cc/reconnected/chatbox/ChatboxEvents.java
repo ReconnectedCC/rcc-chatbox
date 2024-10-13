@@ -1,11 +1,9 @@
 package cc.reconnected.chatbox;
 
-import cc.reconnected.chatbox.api.events.ClientConnected;
-import cc.reconnected.chatbox.api.events.ClientDisconnected;
-import cc.reconnected.chatbox.api.events.PlayerCommand;
+import cc.reconnected.chatbox.api.events.ClientConnectionEvents;
+import cc.reconnected.chatbox.api.events.PlayerCommandEvent;
 import cc.reconnected.chatbox.data.StateSaverAndLoader;
 import cc.reconnected.chatbox.license.Capability;
-import cc.reconnected.chatbox.license.LicenseManager;
 import cc.reconnected.chatbox.models.DiscordUser;
 import cc.reconnected.chatbox.packets.serverPackets.HelloPacket;
 import cc.reconnected.chatbox.packets.serverPackets.PlayersPacket;
@@ -16,7 +14,6 @@ import cc.reconnected.chatbox.utils.DateUtils;
 import cc.reconnected.chatbox.ws.CloseCodes;
 import cc.reconnected.chatbox.ws.WsServer;
 import cc.reconnected.discordbridge.events.DiscordMessage;
-import cc.reconnected.server.RccServer;
 import cc.reconnected.server.database.PlayerData;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
@@ -42,7 +39,7 @@ public class ChatboxEvents {
 
     public static void register() {
         ClientPacketsHandler.register();
-        ClientConnected.EVENT.register((conn, license, isGuest) -> {
+        ClientConnectionEvents.CONNECT.register((conn, license, isGuest) -> {
             var playerData = PlayerData.getPlayer(license.userId());
 
             var helloPacket = new HelloPacket();
@@ -69,7 +66,7 @@ public class ChatboxEvents {
             }
         });
 
-        ClientDisconnected.EVENT.register((conn, license, code, reason, remote) -> {
+        ClientConnectionEvents.DISCONNECT.register((conn, license, code, reason, remote) -> {
             Chatbox.LicenseManager.clearCache(license.uuid());
         });
 
@@ -188,7 +185,7 @@ public class ChatboxEvents {
         });
 
         // Handle chatbox command packet sending
-        PlayerCommand.EVENT.register((player, command, args, ownerOnly) -> {
+        PlayerCommandEvent.EVENT.register((player, command, args, ownerOnly) -> {
             var packet = new CommandEvent();
             packet.command = command;
             packet.args = args;
@@ -227,7 +224,7 @@ public class ChatboxEvents {
             var command = tokens[0].substring(1);
             var args = Arrays.copyOfRange(tokens, 1, tokens.length);
 
-            PlayerCommand.EVENT.invoker().command(sender, command, args, isOwnerOnly);
+            PlayerCommandEvent.EVENT.invoker().onCommand(sender, command, args, isOwnerOnly);
 
             if (!isOwnerOnly) {
                 var playerManager = sender.getServer().getPlayerManager();

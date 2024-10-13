@@ -1,7 +1,6 @@
 package cc.reconnected.chatbox;
 
-import cc.reconnected.chatbox.api.events.ChatboxSay;
-import cc.reconnected.chatbox.api.events.ChatboxTell;
+import cc.reconnected.chatbox.api.events.ChatboxMessageEvents;
 import cc.reconnected.chatbox.license.Capability;
 import cc.reconnected.chatbox.models.User;
 import cc.reconnected.chatbox.packets.clientPackets.SayPacket;
@@ -94,7 +93,7 @@ public class ClientPacketsHandler {
         ServerLifecycleEvents.SERVER_STARTING.register(server -> mcServer = server);
         ServerTickEvents.END_SERVER_TICK.register(ClientPacketsHandler::tickQueue);
 
-        ChatboxSay.EVENT.register((client, packet) -> {
+        ChatboxMessageEvents.SAY.register((client, packet) -> {
             var ownerId = client.license.userId();
             var owner = PlayerData.getPlayer(ownerId);
 
@@ -126,7 +125,7 @@ public class ClientPacketsHandler {
 
         });
 
-        ChatboxTell.EVENT.register((client, packet) -> {
+        ChatboxMessageEvents.TELL.register((client, packet) -> {
             var ownerId = client.license.userId();
             var owner = PlayerData.getPlayer(ownerId);
             if (owner == null) {

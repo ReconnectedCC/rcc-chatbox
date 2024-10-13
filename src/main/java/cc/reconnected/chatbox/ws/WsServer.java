@@ -1,10 +1,7 @@
 package cc.reconnected.chatbox.ws;
 
 import cc.reconnected.chatbox.Chatbox;
-import cc.reconnected.chatbox.api.events.ClientConnected;
-import cc.reconnected.chatbox.api.events.ChatboxSay;
-import cc.reconnected.chatbox.api.events.ChatboxTell;
-import cc.reconnected.chatbox.api.events.ClientDisconnected;
+import cc.reconnected.chatbox.api.events.*;
 import cc.reconnected.chatbox.license.Capability;
 import cc.reconnected.chatbox.license.License;
 import cc.reconnected.chatbox.license.LicenseManager;
@@ -98,7 +95,7 @@ public class WsServer extends WebSocketServer {
 
         Chatbox.LOGGER.info("[{}] New connection with license {} ({})", clientAddress, license.uuid(), license.userId());
 
-        ClientConnected.EVENT.invoker().connect(conn, license, license.userId().equals(LicenseManager.guestLicenseUuid));
+        ClientConnectionEvents.CONNECT.invoker().onConnect(conn, license, license.userId().equals(LicenseManager.guestLicenseUuid));
     }
 
     @Override
@@ -107,7 +104,7 @@ public class WsServer extends WebSocketServer {
             return;
         }
         var client = clients.remove(conn);
-        ClientDisconnected.EVENT.invoker().disconnect(conn, client.license, code, reason, remote);
+        ClientConnectionEvents.DISCONNECT.invoker().onDisconnect(conn, client.license, code, reason, remote);
     }
 
     @Override
@@ -166,7 +163,7 @@ public class WsServer extends WebSocketServer {
                     sayPacket.name = sayPacket.name.substring(0, Math.min(sayPacket.name.length(), nameMaxLength));
                 }
 
-                ChatboxSay.EVENT.invoker().say(client, sayPacket);
+                ChatboxMessageEvents.SAY.invoker().onSay(client, sayPacket);
 
                 break;
             case "tell":
@@ -205,7 +202,7 @@ public class WsServer extends WebSocketServer {
                     tellPacket.name = tellPacket.name.substring(0, Math.min(tellPacket.name.length(), nameMaxLength));
                 }
 
-                ChatboxTell.EVENT.invoker().tell(client, tellPacket);
+                ChatboxMessageEvents.TELL.invoker().onTell(client, tellPacket);
 
                 break;
             default:
