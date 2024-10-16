@@ -1,4 +1,4 @@
-package cc.reconnected.chatbox.data;
+package cc.reconnected.chatbox.state;
 
 import cc.reconnected.chatbox.Chatbox;
 import net.minecraft.entity.LivingEntity;
@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.UUID;
 
 public class StateSaverAndLoader extends PersistentState {
-    public final HashMap<UUID, ChatboxPlayerData> players = new HashMap<>();
+    public final HashMap<UUID, ChatboxPlayerState> players = new HashMap<>();
 
     /**
      * LicenseUUID -> PlayerUUID
@@ -41,7 +41,7 @@ public class StateSaverAndLoader extends PersistentState {
 
         var playersNbt = nbt.getCompound("players");
         playersNbt.getKeys().forEach(key -> {
-            var playerData = new ChatboxPlayerData();
+            var playerData = new ChatboxPlayerState();
 
             playerData.enableSpy = playersNbt.getCompound(key).getBoolean("spy");
             UUID uuid = UUID.fromString(key);
@@ -67,8 +67,8 @@ public class StateSaverAndLoader extends PersistentState {
         return state;
     }
 
-    public static ChatboxPlayerData getPlayerState(LivingEntity player) {
+    public static ChatboxPlayerState getPlayerState(LivingEntity player) {
         var serverState = getServerState(player.getWorld().getServer());
-        return serverState.players.computeIfAbsent(player.getUuid(), uuid -> new ChatboxPlayerData());
+        return serverState.players.computeIfAbsent(player.getUuid(), uuid -> new ChatboxPlayerState());
     }
 }

@@ -2,10 +2,13 @@ package cc.reconnected.chatbox.license;
 
 import cc.reconnected.chatbox.Chatbox;
 import cc.reconnected.server.database.PlayerData;
+import com.google.gson.reflect.TypeToken;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Set;
-import java.util.UUID;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class LicenseManager {
@@ -18,12 +21,42 @@ public class LicenseManager {
         public static final String capabilities = nodePrefix + ".capabilities";
     }
 
-    private final ConcurrentHashMap<UUID, License> cache = new ConcurrentHashMap<>();
+    private final Path licensesPath;
+    private ConcurrentHashMap<UUID, License> licenses;
+    public List<String> getLicenseList() {
+        return licenses.keySet().stream().map(UUID::toString).toList();
+    }
 
     public LicenseManager() {
         guestLicense.capabilities().clear();
         guestLicense.capabilities().add(Capability.READ);
-        cache.put(guestLicenseUuid, guestLicense);
+
+        // Manage dedicated data for licenses.
+        // Minecraft's persistent state loses data on crashes, the chatbox licenses should not depend on a stable state of the world data
+        licensesPath = Chatbox.dataDirectory().resolve("licenses.json");
+
+        if (licensesPath.toFile().exists()) {
+            try (var stream = new BufferedReader(new FileReader(licensesPath.toFile(), StandardCharsets.UTF_8))) {
+                var type = new TypeToken<ConcurrentHashMap<UUID, License>>() {
+                }.getType();
+                licenses = Chatbox.GSON.fromJson(stream, type);
+            } catch (FileNotFoundException e) {
+                Chatbox.LOGGER.error("If you read this I messed up", e);
+            } catch (IOException e) {
+                Chatbox.LOGGER.error("Exception reading licenses data", e);
+            }
+        } else {
+            licenses = new ConcurrentHashMap<>();
+        }
+    }
+
+    private void saveData() {
+        var output = Chatbox.GSON.toJson(licenses);
+        try (var stream = new FileWriter(licensesPath.toFile(), StandardCharsets.UTF_8)) {
+            stream.write(output);
+        } catch (IOException e) {
+            Chatbox.LOGGER.error("Exception saving licenses data", e);
+        }
     }
 
     private License buildLicense(String uuid, String userId, int packedCapabilities) {
@@ -37,14 +70,16 @@ public class LicenseManager {
         if (licenseId.equals(guestLicenseUuid)) {
             return guestLicense;
         }
-        if (cache.containsKey(licenseId)) {
-            return cache.get(licenseId);
+
+        if (licenses.containsKey(licenseId)) {
+            return licenses.get(licenseId);
         }
 
         var serverState = Chatbox.getInstance().serverState();
         if (!serverState.licenses.containsKey(licenseId))
             return null;
 
+        // Migrate from LP
         var ownerUuid = serverState.licenses.get(licenseId);
         var playerData = PlayerData.getPlayer(ownerUuid);
         var licenseUuid = playerData.get(KEYS.licenseUuid);
@@ -57,9 +92,15 @@ public class LicenseManager {
                 // do nothing
             }
         }
+        serverState.licenses.remove(licenseId);
 
         var license = buildLicense(licenseUuid, ownerUuid.toString(), packedCapabilities);
-        cache.put(license.uuid(), license);
+        licenses.put(license.uuid(), license);
+
+        saveData();
+
+        playerData.delete(KEYS.licenseUuid).join();
+        playerData.delete(KEYS.capabilities).join();
 
         return license;
     }
@@ -69,7 +110,9 @@ public class LicenseManager {
         if (userId.equals(guestLicenseUuid)) {
             return guestLicense;
         }
-        var license = cache.values().parallelStream().filter(l -> l.userId() == userId).findFirst().orElse(null);
+
+        var license = licenses.values().stream().filter(l -> l.userId().equals(userId))
+                .findFirst().orElse(null);
         if (license != null) {
             return license;
         }
@@ -78,19 +121,8 @@ public class LicenseManager {
         var licenseUuid = playerData.get(KEYS.licenseUuid);
         if (licenseUuid == null)
             return null;
-        var capabilitiesStr = playerData.get(KEYS.capabilities);
-        int packedCapabilities = 0;
-        if (capabilitiesStr != null) {
-            try {
-                packedCapabilities = Integer.parseInt(capabilitiesStr);
-            } catch (NumberFormatException e) {
-                // do nothing
-            }
-        }
 
-        license = buildLicense(licenseUuid, userId.toString(), packedCapabilities);
-        cache.put(license.uuid(), license);
-        return license;
+        return getLicense(UUID.fromString(licenseUuid));
     }
 
     public License createLicense(UUID userId, Set<Capability> capabilities) {
@@ -107,13 +139,9 @@ public class LicenseManager {
         license = new License(uuid, userId);
         license.capabilities().addAll(capabilities);
 
-        var playerData = PlayerData.getPlayer(userId);
-        playerData.set(KEYS.licenseUuid, uuid.toString()).join();
-        playerData.set(KEYS.capabilities, String.valueOf(Capability.pack(capabilities))).join();
+        licenses.put(uuid, license);
 
-        Chatbox.getInstance().serverState().licenses.put(uuid, userId);
-
-        cache.put(uuid, license);
+        saveData();
 
         return license;
     }
@@ -133,7 +161,10 @@ public class LicenseManager {
         playerData.delete(KEYS.capabilities).join();
 
         Chatbox.getInstance().serverState().licenses.remove(license.uuid());
-        cache.remove(license.uuid());
+        licenses.remove(license.uuid());
+
+        saveData();
+
         return true;
     }
 
@@ -148,15 +179,9 @@ public class LicenseManager {
 
         license.capabilities().clear();
         license.capabilities().addAll(capabilities);
-        var playerData = PlayerData.getPlayer(license.userId());
 
-        playerData.set(KEYS.capabilities, String.valueOf(Capability.pack(capabilities))).join();
-        cache.put(license.uuid(), license);
+        saveData();
 
         return true;
-    }
-
-    public void clearCache(UUID licenseUuid) {
-        cache.remove(licenseUuid);
     }
 }

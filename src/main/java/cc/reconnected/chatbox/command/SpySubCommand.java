@@ -1,7 +1,7 @@
 package cc.reconnected.chatbox.command;
 
 import cc.reconnected.chatbox.ChatboxEvents;
-import cc.reconnected.chatbox.data.StateSaverAndLoader;
+import cc.reconnected.chatbox.state.StateSaverAndLoader;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import me.lucko.fabric.api.permissions.v0.Permissions;

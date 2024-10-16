@@ -2,7 +2,7 @@ package cc.reconnected.chatbox;
 
 import cc.reconnected.chatbox.api.events.ClientConnectionEvents;
 import cc.reconnected.chatbox.api.events.PlayerCommandEvent;
-import cc.reconnected.chatbox.data.StateSaverAndLoader;
+import cc.reconnected.chatbox.state.StateSaverAndLoader;
 import cc.reconnected.chatbox.license.Capability;
 import cc.reconnected.chatbox.models.DiscordUser;
 import cc.reconnected.chatbox.packets.serverPackets.HelloPacket;
@@ -68,9 +68,6 @@ public class ChatboxEvents {
                 conn.send(msg);
             }
         });
-
-        ClientConnectionEvents.DISCONNECT.register((conn, license, code, reason, remote) ->
-                Chatbox.LicenseManager.clearCache(license.uuid()));
 
         ServerLifecycleEvents.SERVER_STARTING.register(server ->
                 mcServer = server);

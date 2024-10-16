@@ -17,6 +17,21 @@ public class ChatboxCommand {
             .append(Text.literal("]").setStyle(Style.EMPTY.withColor(Formatting.GRAY)))
             .append(" ");
 
+    public static MutableText buildHelpMessage(String base, String[] subs) {
+        var text = Text.empty();
+        for (var command : subs) {
+            text = text.append(Text.of("\n - "))
+                    .append(Text.literal("/" + base + " " + command)
+                            .setStyle(Style.EMPTY.withColor(Formatting.BLUE).withUnderline(true)
+                                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Click to suggest command")))
+                                    .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/" + base + " " + command))
+                            )
+                    );
+        }
+
+        return text;
+    }
+
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher,
                                 CommandRegistryAccess registryAccess,
                                 CommandManager.RegistrationEnvironment environment) {
@@ -30,26 +45,18 @@ public class ChatboxCommand {
                             "spy"
                     };
 
-                    var text = Text.empty()
+                    final var text = Text.empty()
                             .append(prefix)
-                            .append("Manage your Chatbox license:");
+                            .append("Manage your Chatbox license:")
+                            .append(buildHelpMessage("chatbox", commands));
 
-                    for (var command : commands) {
-                        text = text.append(Text.of("\n - "))
-                                .append(Text.literal("/chatbox " + command)
-                                        .setStyle(Style.EMPTY.withColor(Formatting.BLUE).withUnderline(true)
-                                                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.of("Click to suggest command")))
-                                                .withClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/chatbox " + command))
-                                        )
-                                );
-                    }
 
-                    final var finalText = text;
-                    context.getSource().sendFeedback(() -> finalText, false);
+                    context.getSource().sendFeedback(() -> text, false);
                     return 1;
                 })
                 .then(LicenseSubCommand.register(dispatcher, registryAccess, environment))
-                .then(SpySubCommand.register(dispatcher, registryAccess, environment));
+                .then(SpySubCommand.register(dispatcher, registryAccess, environment))
+                .then(AdminSubCommand.register(dispatcher, registryAccess, environment));
 
         dispatcher.register(rootCommand);
     }

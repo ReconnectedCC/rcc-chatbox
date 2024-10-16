@@ -79,7 +79,7 @@ public class WsServer extends WebSocketServer {
 
         License license;
         try {
-            license = Chatbox.LicenseManager.getLicense(licenseUuid);
+            license = Chatbox.licenseManager().getLicense(licenseUuid);
         } catch (Exception e) {
             conn.close(CloseCodes.FATAL_ERROR.code, CloseCodes.FATAL_ERROR.getErrorString());
             Chatbox.LOGGER.error("Failed to load license", e);

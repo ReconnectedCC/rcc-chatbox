@@ -84,14 +84,13 @@ public class LicenseSubCommand {
     public static LiteralArgumentBuilder<ServerCommandSource> register(CommandDispatcher<ServerCommandSource> dispatcher,
                                                                        CommandRegistryAccess registryAccess,
                                                                        CommandManager.RegistrationEnvironment environment) {
-        var manager = Chatbox.LicenseManager;
-
         return literal("license")
                 .executes(context -> {
                     if(!context.getSource().isExecutedByPlayer()) {
                         context.getSource().sendFeedback(() -> Text.literal("This command can only be executed by players!"), false);
                         return 0;
                     }
+                    var manager = Chatbox.licenseManager();
                     final var userId = context.getSource().getPlayer().getUuid();
                     var userLicense = manager.getLicenseFromUser(userId);
                     if (userLicense == null) {
@@ -120,6 +119,7 @@ public class LicenseSubCommand {
                                 context.getSource().sendFeedback(() -> Text.literal("This command can only be executed by players!"), false);
                                 return 0;
                             }
+                            var manager = Chatbox.licenseManager();
                             final var userId = context.getSource().getPlayer().getUuid();
                             var userLicense = manager.getLicenseFromUser(userId);
                             var createNew = userLicense == null;
@@ -138,10 +138,11 @@ public class LicenseSubCommand {
                                 context.getSource().sendFeedback(() -> Text.literal("This command can only be executed by players!"), false);
                                 return 0;
                             }
+                            var manager = Chatbox.licenseManager();
                             var userLicense = manager.getLicenseFromUser(context.getSource().getPlayer().getUuid());
                             if (userLicense == null) {
                                 var text = Component.empty().append(ChatboxCommand.prefix)
-                                        .append(Component.text("Your already do not have a license!").color(NamedTextColor.RED));
+                                        .append(Component.text("You already do not have a license!").color(NamedTextColor.RED));
 
                                 context.getSource().sendMessage(text);
                                 return 1;
