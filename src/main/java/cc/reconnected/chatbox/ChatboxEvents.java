@@ -55,7 +55,7 @@ public class ChatboxEvents {
                 if (mcPlayer != null) {
                     helloPacket.licenseOwnerUser = User.create(mcPlayer);
                 } else {
-                    helloPacket.licenseOwnerUser = User.tryGet(license.userId());
+                    helloPacket.licenseOwnerUser = User.tryGet(license.userId(), true);
                 }
                 license.user = helloPacket.licenseOwnerUser;
             }
@@ -251,7 +251,7 @@ public class ChatboxEvents {
     }
 
     private static void emitDiscordChatEvent(Message message, Member member, boolean isEdited) {
-        var user = DiscordUser.fromMember(member);
+        var user = DiscordUser.fromMember(member, true);
         var packet = new DiscordChatEvent();
         packet.text = message.getContentStripped();
         packet.rawText = message.getContentRaw();
@@ -279,7 +279,7 @@ public class ChatboxEvents {
         packet.players = new User[list.size()];
         for (int i = 0; i < list.size(); i++) {
             var player = list.get(i);
-            var user = User.create(player);
+            var user = User.create(player, true);
             packet.players[i] = user;
         }
 

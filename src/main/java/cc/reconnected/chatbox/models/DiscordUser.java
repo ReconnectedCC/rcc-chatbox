@@ -1,5 +1,6 @@
 package cc.reconnected.chatbox.models;
 
+import cc.reconnected.discordbridge.Bridge;
 import net.dv8tion.jda.api.entities.Member;
 import org.jetbrains.annotations.Nullable;
 
@@ -14,7 +15,7 @@ public class DiscordUser {
     @Nullable
     public User linkedUser;
 
-    public static DiscordUser fromMember(Member member) {
+    public static DiscordUser fromMember(Member member, boolean resolveLinkedUser) {
         var user = new DiscordUser();
 
         user.id = member.getUser().getId();
@@ -22,6 +23,7 @@ public class DiscordUser {
         user.name = member.getUser().getName();
         user.displayName = member.getEffectiveName();
         user.avatar = member.getUser().getAvatarUrl();
+        user.linkedUser = null;
 
         var roles = member.getRoles();
         user.roles = new DiscordRole[roles.size()];
@@ -34,8 +36,15 @@ public class DiscordUser {
             lRole.colour = role.getColorRaw();
         }
 
-        // TODO: add linkedUser, requires rcc-discord to support linking
+        if (resolveLinkedUser && Bridge.discordLinks.containsKey(user.id)) {
+            var playerUuid = Bridge.discordLinks.get(user.id);
+            user.linkedUser = User.tryGet(playerUuid, false);
+        }
 
         return user;
+    }
+
+    public static DiscordUser fromMember(Member member) {
+        return fromMember(member, false);
     }
 }
