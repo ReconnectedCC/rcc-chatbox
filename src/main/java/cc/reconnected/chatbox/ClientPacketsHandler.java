@@ -22,17 +22,19 @@ import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ClientPacketsHandler {
     public static final int maxMessageQueSize = 5;
 
     // License UUID = queue
-    private static final HashMap<UUID, Queue<ClientMessage>> messageQueue = new HashMap<>();
+    private static final ConcurrentHashMap<UUID, ConcurrentLinkedQueue<ClientMessage>> messageQueue = new ConcurrentHashMap<>();
 
     private static MinecraftServer mcServer;
 
     private static boolean tryEnqueue(UUID licenseId, ClientMessage message) {
-        var queue = messageQueue.computeIfAbsent(licenseId, id -> new LinkedList<>());
+        var queue = messageQueue.computeIfAbsent(licenseId, id -> new ConcurrentLinkedQueue<>());
         if (queue.size() >= maxMessageQueSize)
             return false;
 
