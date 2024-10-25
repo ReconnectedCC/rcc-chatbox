@@ -1,8 +1,8 @@
 package cc.reconnected.chatbox.utils;
 
-import cc.reconnected.chatbox.parsers.MarkdownParser;
 import cc.reconnected.chatbox.parsers.MiniMessageSerializer;
 import cc.reconnected.server.database.PlayerData;
+import cc.reconnected.server.parser.MarkdownParser;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -39,7 +39,7 @@ public class TextComponents {
         switch (type) {
             case "format" -> formattedContent = legacySerializer.deserialize(content);
             case "markdown" -> {
-                var rawContent = MarkdownParser.contentParser.parseNode(content).toText();
+                var rawContent = MarkdownParser.defaultParser.parseNode(content).toText();
                 var json = JSONComponentSerializer.json();
                 formattedContent = json.deserialize(Text.Serializer.toJson(rawContent));
             }

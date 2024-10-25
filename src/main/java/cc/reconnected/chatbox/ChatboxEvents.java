@@ -9,13 +9,13 @@ import cc.reconnected.chatbox.packets.serverPackets.HelloPacket;
 import cc.reconnected.chatbox.packets.serverPackets.PlayersPacket;
 import cc.reconnected.chatbox.packets.serverPackets.events.*;
 import cc.reconnected.chatbox.models.User;
-import cc.reconnected.chatbox.parsers.MarkdownParser;
 import cc.reconnected.chatbox.utils.DateUtils;
 import cc.reconnected.chatbox.ws.CloseCodes;
 import cc.reconnected.chatbox.ws.WsServer;
 import cc.reconnected.discordbridge.events.DiscordMessageEvents;
 import cc.reconnected.server.database.PlayerData;
 import cc.reconnected.server.events.PlayerActivityEvents;
+import cc.reconnected.server.parser.MarkdownParser;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
@@ -161,7 +161,7 @@ public class ChatboxEvents {
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
             var packet = new InGameChatEvent();
 
-            var parsedMessage = MarkdownParser.contentParser.parseNode(message.getContent().getString()).toText();
+            var parsedMessage = MarkdownParser.defaultParser.parseNode(message.getContent().getString()).toText();
             packet.text = parsedMessage.getString();
             packet.rawText = message.getContent().getString();
             packet.renderedText = Text.Serializer.toJsonTree(parsedMessage);
@@ -255,7 +255,7 @@ public class ChatboxEvents {
         var packet = new DiscordChatEvent();
         packet.text = message.getContentStripped();
         packet.rawText = message.getContentRaw();
-        packet.renderedText = Text.Serializer.toJsonTree(MarkdownParser.contentParser.parseNode(message.getContentDisplay()).toText());
+        packet.renderedText = Text.Serializer.toJsonTree(MarkdownParser.defaultParser.parseNode(message.getContentDisplay()).toText());
         packet.discordId = message.getId();
         packet.discordUser = user;
         packet.edited = isEdited;

@@ -2,6 +2,7 @@ package cc.reconnected.chatbox.models;
 
 import cc.reconnected.discordbridge.Bridge;
 import cc.reconnected.server.RccServer;
+import cc.reconnected.server.core.AfkTracker;
 import cc.reconnected.server.database.PlayerData;
 import net.dv8tion.jda.api.entities.UserSnowflake;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -28,7 +29,7 @@ public class User {
         PlayerData playerData;
         if(entity != null) {
             playerData = PlayerData.getPlayer(entity);
-            user.afk = RccServer.getInstance().isPlayerAfk(entity);
+            user.afk = AfkTracker.getInstance().isPlayerAfk(entity.getUuid());
         } else {
             playerData = PlayerData.getPlayer(UUID.fromString(user.uuid));
             user.afk = false;
