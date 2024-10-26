@@ -13,8 +13,8 @@ import cc.reconnected.chatbox.utils.DateUtils;
 import cc.reconnected.chatbox.ws.CloseCodes;
 import cc.reconnected.chatbox.ws.WsServer;
 import cc.reconnected.discordbridge.events.DiscordMessageEvents;
-import cc.reconnected.server.database.PlayerData;
-import cc.reconnected.server.events.PlayerActivityEvents;
+import cc.reconnected.server.api.PlayerMeta;
+import cc.reconnected.server.api.events.PlayerActivityEvents;
 import cc.reconnected.server.parser.MarkdownParser;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -43,7 +43,7 @@ public class ChatboxEvents {
     public static void register() {
         ClientPacketsHandler.register();
         ClientConnectionEvents.CONNECT.register((conn, license, isGuest) -> {
-            var playerData = PlayerData.getPlayer(license.userId());
+            var playerData = PlayerMeta.getPlayer(license.userId());
 
             var helloPacket = new HelloPacket();
             helloPacket.capabilities = license.capabilities().stream().map(c -> c.toString().toLowerCase()).toArray(String[]::new);

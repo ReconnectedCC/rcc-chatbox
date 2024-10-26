@@ -1,7 +1,7 @@
 package cc.reconnected.chatbox.utils;
 
 import cc.reconnected.chatbox.parsers.MiniMessageSerializer;
-import cc.reconnected.server.database.PlayerData;
+import cc.reconnected.server.api.PlayerMeta;
 import cc.reconnected.server.parser.MarkdownParser;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.HoverEvent;
@@ -23,7 +23,7 @@ public class TextComponents {
             .append(Component.text("CB").color(NamedTextColor.DARK_GRAY).hoverEvent(HoverEvent.showText(Component.text("This message was publicly sent by an automated chatbot."))))
             .append(Component.text("]", NamedTextColor.GRAY));
 
-    public static Component addLabelInfo(Component name, PlayerData owner) {
+    public static Component addLabelInfo(Component name, PlayerMeta owner) {
         var ownerMeta = Component.text("Owned by " + owner.getEffectiveName());
         return name.hoverEvent(HoverEvent.showText(ownerMeta));
     }
@@ -50,7 +50,7 @@ public class TextComponents {
         return formattedContent;
     }
 
-    public static Component buildChatbotMessage(Component label, Component content, PlayerData owner) {
+    public static Component buildChatbotMessage(Component label, Component content, PlayerMeta owner) {
         return Component.empty()
                 .append(addLabelInfo(label, owner))
                 .append(Component.text(':', NamedTextColor.GRAY))

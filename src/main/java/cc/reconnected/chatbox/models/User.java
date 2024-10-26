@@ -1,9 +1,8 @@
 package cc.reconnected.chatbox.models;
 
 import cc.reconnected.discordbridge.Bridge;
-import cc.reconnected.server.RccServer;
 import cc.reconnected.server.core.AfkTracker;
-import cc.reconnected.server.database.PlayerData;
+import cc.reconnected.server.api.PlayerMeta;
 import net.dv8tion.jda.api.entities.UserSnowflake;
 import net.minecraft.server.network.ServerPlayerEntity;
 import org.jetbrains.annotations.Nullable;
@@ -26,29 +25,29 @@ public class User {
     public DiscordUser linkedUser;
 
     private static void fillInData(User user, @Nullable ServerPlayerEntity entity, boolean resolveDiscord) {
-        PlayerData playerData;
+        PlayerMeta playerData;
         if(entity != null) {
-            playerData = PlayerData.getPlayer(entity);
+            playerData = PlayerMeta.getPlayer(entity);
             user.afk = AfkTracker.getInstance().isPlayerAfk(entity.getUuid());
         } else {
-            playerData = PlayerData.getPlayer(UUID.fromString(user.uuid));
+            playerData = PlayerMeta.getPlayer(UUID.fromString(user.uuid));
             user.afk = false;
         }
 
         user.group = playerData.getPrimaryGroup();
-        user.pronouns = playerData.get(PlayerData.KEYS.pronouns);
-        user.alt = playerData.getBoolean(PlayerData.KEYS.isAlt);
-        user.bot = playerData.getBoolean(PlayerData.KEYS.isBot);
+        user.pronouns = playerData.get(PlayerMeta.KEYS.pronouns);
+        user.alt = playerData.getBoolean(PlayerMeta.KEYS.isAlt);
+        user.bot = playerData.getBoolean(PlayerMeta.KEYS.isBot);
 
         user.supporter = 0;
-        var supporterStr = playerData.get(PlayerData.KEYS.supporterLevel);
+        var supporterStr = playerData.get(PlayerMeta.KEYS.supporterLevel);
         if (supporterStr != null) {
             user.supporter = Integer.parseInt(supporterStr);
         }
 
         user.linkedUser = null;
         if(resolveDiscord) {
-            var discordId = playerData.get(PlayerData.KEYS.discordId);
+            var discordId = playerData.get(PlayerMeta.KEYS.discordId);
             if (discordId != null) {
                 var member = Bridge.getInstance().getClient().guild().getMember(UserSnowflake.fromId(discordId));
                 if (member != null) {
@@ -79,7 +78,7 @@ public class User {
     public static User tryGet(UUID playerUuid, boolean resolveDiscord) {
         var user = new User();
 
-        var playerData = PlayerData.getPlayer(playerUuid);
+        var playerData = PlayerMeta.getPlayer(playerUuid);
 
         user.uuid = playerUuid.toString();
         user.name = playerData.getEffectiveName();

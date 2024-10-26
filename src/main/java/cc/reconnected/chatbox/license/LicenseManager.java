@@ -1,7 +1,7 @@
 package cc.reconnected.chatbox.license;
 
 import cc.reconnected.chatbox.Chatbox;
-import cc.reconnected.server.database.PlayerData;
+import cc.reconnected.server.api.PlayerMeta;
 import com.google.gson.reflect.TypeToken;
 import org.jetbrains.annotations.Nullable;
 
@@ -81,7 +81,7 @@ public class LicenseManager {
 
         // Migrate from LP
         var ownerUuid = serverState.licenses.get(licenseId);
-        var playerData = PlayerData.getPlayer(ownerUuid);
+        var playerData = PlayerMeta.getPlayer(ownerUuid);
         var licenseUuid = playerData.get(KEYS.licenseUuid);
         var capabilitiesStr = playerData.get(KEYS.capabilities);
         int packedCapabilities = 0;
@@ -117,7 +117,7 @@ public class LicenseManager {
             return license;
         }
 
-        var playerData = PlayerData.getPlayer(userId);
+        var playerData = PlayerMeta.getPlayer(userId);
         var licenseUuid = playerData.get(KEYS.licenseUuid);
         if (licenseUuid == null)
             return null;
@@ -156,7 +156,7 @@ public class LicenseManager {
             return false;
         }
 
-        var playerData = PlayerData.getPlayer(license.userId());
+        var playerData = PlayerMeta.getPlayer(license.userId());
         playerData.delete(KEYS.licenseUuid).join();
         playerData.delete(KEYS.capabilities).join();
 

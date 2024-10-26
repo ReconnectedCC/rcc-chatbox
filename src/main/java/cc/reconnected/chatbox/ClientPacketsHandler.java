@@ -10,7 +10,7 @@ import cc.reconnected.chatbox.packets.serverPackets.events.ChatboxChatEvent;
 import cc.reconnected.chatbox.utils.DateUtils;
 import cc.reconnected.chatbox.utils.TextComponents;
 import cc.reconnected.chatbox.ws.ClientErrors;
-import cc.reconnected.server.database.PlayerData;
+import cc.reconnected.server.api.PlayerMeta;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.kyori.adventure.text.Component;
@@ -106,7 +106,7 @@ public class ClientPacketsHandler {
 
         ChatboxMessageEvents.SAY.register((client, packet) -> {
             var ownerId = client.license.userId();
-            var owner = PlayerData.getPlayer(ownerId);
+            var owner = PlayerMeta.getPlayer(ownerId);
 
             var name = packet.name != null ? packet.name : owner.getEffectiveName();
             var label = TextComponents.formatLabel(name);
@@ -133,7 +133,7 @@ public class ClientPacketsHandler {
 
         ChatboxMessageEvents.TELL.register((client, packet) -> {
             var ownerId = client.license.userId();
-            var owner = PlayerData.getPlayer(ownerId);
+            var owner = PlayerMeta.getPlayer(ownerId);
 
             var player = mcServer.getPlayerManager().getPlayer(packet.user);
             if (player == null) {
