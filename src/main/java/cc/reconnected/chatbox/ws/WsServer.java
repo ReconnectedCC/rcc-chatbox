@@ -236,21 +236,22 @@ public class WsServer extends WebSocketServer {
     public void broadcastEvent(Object packet, @Nullable Capability capability) {
         var msg = Chatbox.GSON.toJson(packet);
 
-        List<WebSocket> recipients;
         if (capability == null) {
-            recipients = clients.keySet().stream().toList();
+            broadcast(msg);
         } else {
-            recipients = clients
+            var recipients = clients
                     .entrySet()
                     .stream()
                     .filter(e -> e.getValue().license.capabilities().contains(capability))
                     .map(Map.Entry::getKey)
                     .toList();
+
+            for (var conn : recipients) {
+                conn.send(msg);
+            }
         }
 
-        for (var conn : recipients) {
-            conn.send(msg);
-        }
+
     }
 
     public void broadcastOwnerEvent(Object packet, @Nullable Capability capability, UUID ownerId) {

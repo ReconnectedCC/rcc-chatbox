@@ -1,6 +1,7 @@
 package cc.reconnected.chatbox;
 
 import cc.reconnected.chatbox.command.ChatboxCommand;
+import cc.reconnected.chatbox.packets.serverPackets.PingPacket;
 import cc.reconnected.chatbox.state.StateSaverAndLoader;
 import com.google.gson.Gson;
 import cc.reconnected.chatbox.license.LicenseManager;
@@ -8,6 +9,7 @@ import cc.reconnected.chatbox.ws.WsServer;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.util.WorldSavePath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,6 +78,13 @@ public class Chatbox implements ModInitializer {
             serverState = StateSaverAndLoader.getServerState(server);
         });
 
+        var delay = 60 * 20;
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            if(server.getTicks() % delay == 0) {
+                var pingPacket = new PingPacket();
+                wss.broadcastEvent(pingPacket, null);
+            }
+        });
 
         ChatboxEvents.register();
     }
