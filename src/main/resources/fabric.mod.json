@@ -27,8 +27,8 @@
 		"minecraft": "~1.20.1",
 		"java": ">=17",
 		"fabric-api": "*",
-		"rcc-server": ">=1.15.0",
-		"rcc-discord": ">=1.7.8",
+		"rcc-server": ">=1.16.1",
+		"rcc-discord": ">=1.7.9",
 		"luckperms": ">=5.4"
 	}
 }

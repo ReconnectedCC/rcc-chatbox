@@ -15,6 +15,8 @@ import cc.reconnected.chatbox.ws.WsServer;
 import cc.reconnected.discordbridge.events.DiscordMessageEvents;
 import cc.reconnected.server.api.PlayerMeta;
 import cc.reconnected.server.api.events.PlayerActivityEvents;
+import cc.reconnected.server.api.events.RestartEvents;
+import cc.reconnected.server.core.BossBarManager;
 import cc.reconnected.server.parser.MarkdownParser;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -28,8 +30,11 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.InetSocketAddress;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 public class ChatboxEvents {
@@ -39,6 +44,10 @@ public class ChatboxEvents {
     public static final HashMap<UUID, Boolean> spyingPlayers = new HashMap<>();
 
     private static MinecraftServer mcServer;
+    @Nullable
+    private static BossBarManager.TimeBar restartBar = null;
+    @Nullable
+    private static ServerRestartScheduledEvent restartScheduledEvent = null;
 
     public static void register() {
         ClientPacketsHandler.register();
@@ -64,8 +73,14 @@ public class ChatboxEvents {
             conn.send(packetJson);
 
             if (license.capabilities().contains(Capability.READ)) {
-                var msg = Chatbox.GSON.toJson(ChatboxEvents.createPlayersPacket());
-                conn.send(msg);
+                var playersPacket = Chatbox.GSON.toJson(ChatboxEvents.createPlayersPacket());
+                conn.send(playersPacket);
+
+                if (restartBar != null) {
+                    fixRestartTime();
+                    var restartPacket = Chatbox.GSON.toJson(restartScheduledEvent);
+                    conn.send(restartPacket);
+                }
             }
         });
 
@@ -248,6 +263,43 @@ public class ChatboxEvents {
 
             Chatbox.getInstance().wss().broadcastEvent(packet, Capability.READ);
         });
+
+        RestartEvents.SCHEDULED.register(timeBar -> {
+            restartBar = timeBar;
+            var packet = new ServerRestartScheduledEvent();
+            var now = new Date();
+            var duration = Duration.ofSeconds(timeBar.getTime());
+            var restartAt = duration.addTo(now.toInstant());
+            var restartAtDate = Date.from(Instant.from(restartAt));
+
+            packet.time = DateUtils.getTime(now);
+            packet.restartAt = DateUtils.getTime(restartAtDate);
+            packet.restartType = "automatic"; // manual currently not supported
+
+            fixRestartTime();
+
+            Chatbox.getInstance().wss().broadcastEvent(packet, Capability.READ);
+        });
+
+        RestartEvents.CANCELED.register(timeBar -> {
+            if (restartScheduledEvent == null)
+                return;
+
+            var packet = new ServerRestartCancelledEvent();
+            packet.time = DateUtils.getTime(new Date());
+            packet.restartType = restartScheduledEvent.restartType;
+
+            restartBar = null;
+            restartScheduledEvent = null;
+            Chatbox.getInstance().wss().broadcastEvent(packet, Capability.READ);
+        });
+    }
+
+    private static void fixRestartTime() {
+        if (restartScheduledEvent == null)
+            return;
+
+        restartScheduledEvent.restartSeconds = restartBar.getRemainingSeconds();
     }
 
     private static void emitDiscordChatEvent(Message message, Member member, boolean isEdited) {
