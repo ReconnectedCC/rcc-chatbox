@@ -1,8 +1,8 @@
 package cc.reconnected.chatbox.models;
 
-import cc.reconnected.discordbridge.Bridge;
-import cc.reconnected.server.core.AfkTracker;
-import cc.reconnected.server.api.PlayerMeta;
+import cc.reconnected.discordbridge.RccDiscord;
+import cc.reconnected.essentials.core.AfkTracker;
+import cc.reconnected.library.data.PlayerMeta;
 import net.dv8tion.jda.api.entities.UserSnowflake;
 import net.minecraft.server.network.ServerPlayerEntity;
 import org.jetbrains.annotations.Nullable;
@@ -49,7 +49,7 @@ public class User {
         if(resolveDiscord) {
             var discordId = playerData.get(PlayerMeta.KEYS.discordId);
             if (discordId != null) {
-                var member = Bridge.getInstance().getClient().guild().getMember(UserSnowflake.fromId(discordId));
+                var member = RccDiscord.getInstance().getClient().guild().getMember(UserSnowflake.fromId(discordId));
                 if (member != null) {
                     user.linkedUser = DiscordUser.fromMember(member, false);
                 }

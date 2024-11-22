@@ -1,6 +1,6 @@
 package cc.reconnected.chatbox.ws;
 
-import cc.reconnected.chatbox.Chatbox;
+import cc.reconnected.chatbox.RccChatbox;
 import cc.reconnected.chatbox.api.events.*;
 import cc.reconnected.chatbox.license.Capability;
 import cc.reconnected.chatbox.license.License;
@@ -37,7 +37,7 @@ public class WsServer extends WebSocketServer {
 
     public WsServer(InetSocketAddress address) {
         super(address);
-        this.guestAddress = new InetAddressConverter().convert(Chatbox.CONFIG.guestAllowedAddress());
+        this.guestAddress = new InetAddressConverter().convert(RccChatbox.CONFIG.guestAllowedAddress);
     }
 
     @Override
@@ -79,10 +79,10 @@ public class WsServer extends WebSocketServer {
 
         License license;
         try {
-            license = Chatbox.licenseManager().getLicense(licenseUuid);
+            license = RccChatbox.licenseManager().getLicense(licenseUuid);
         } catch (Exception e) {
             conn.close(CloseCodes.FATAL_ERROR.code, CloseCodes.FATAL_ERROR.getErrorString());
-            Chatbox.LOGGER.error("Failed to load license", e);
+            RccChatbox.LOGGER.error("Failed to load license", e);
             return;
         }
 
@@ -93,7 +93,7 @@ public class WsServer extends WebSocketServer {
 
         clients.put(conn, new ChatboxClient(license, conn, clientAddress));
 
-        Chatbox.LOGGER.info("[{}] New connection with license {} ({})", clientAddress, license.uuid(), license.userId());
+        RccChatbox.LOGGER.info("[{}] New connection with license {} ({})", clientAddress, license.uuid(), license.userId());
 
         ClientConnectionEvents.CONNECT.invoker().onConnect(conn, license, license.userId().equals(LicenseManager.guestLicenseUuid));
     }
@@ -109,19 +109,19 @@ public class WsServer extends WebSocketServer {
 
     @Override
     public void onMessage(WebSocket conn, String message) {
-        Chatbox.LOGGER.debug(message);
+        RccChatbox.LOGGER.debug(message);
         ClientPacketBase packet;
         try {
-            packet = Chatbox.GSON.fromJson(message, ClientPacketBase.class);
+            packet = RccChatbox.GSON.fromJson(message, ClientPacketBase.class);
         } catch (Exception e) {
             var err = ClientErrors.UNKNOWN_ERROR;
-            conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, -1)));
+            conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, -1)));
             return;
         }
 
         if (packet == null) {
             var err = ClientErrors.UNKNOWN_ERROR;
-            conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, -1)));
+            conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, -1)));
             return;
         }
 
@@ -134,17 +134,17 @@ public class WsServer extends WebSocketServer {
 
         switch (packet.type) {
             case "say":
-                var sayPacket = Chatbox.GSON.fromJson(message, SayPacket.class);
+                var sayPacket = RccChatbox.GSON.fromJson(message, SayPacket.class);
                 sayPacket.id = id;
                 if (!client.license.capabilities().contains(Capability.SAY)) {
                     var err = ClientErrors.MISSING_CAPABILITY;
-                    conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
+                    conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
                     return;
                 }
 
                 if (sayPacket.text == null) {
                     var err = ClientErrors.MISSING_TEXT;
-                    conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
+                    conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
                     return;
                 }
 
@@ -153,7 +153,7 @@ public class WsServer extends WebSocketServer {
 
                 if (!Formats.available.contains(sayPacket.mode)) {
                     var err = ClientErrors.INVALID_MODE;
-                    conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
+                    conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
                     return;
                 }
 
@@ -167,23 +167,23 @@ public class WsServer extends WebSocketServer {
 
                 break;
             case "tell":
-                var tellPacket = Chatbox.GSON.fromJson(message, TellPacket.class);
+                var tellPacket = RccChatbox.GSON.fromJson(message, TellPacket.class);
                 tellPacket.id = id;
                 if (!client.license.capabilities().contains(Capability.TELL)) {
                     var err = ClientErrors.MISSING_CAPABILITY;
-                    conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
+                    conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
                     return;
                 }
 
                 if (tellPacket.user == null) {
                     var err = ClientErrors.MISSING_USER;
-                    conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
+                    conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
                     return;
                 }
 
                 if (tellPacket.text == null) {
                     var err = ClientErrors.MISSING_TEXT;
-                    conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
+                    conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
                     return;
                 }
 
@@ -192,7 +192,7 @@ public class WsServer extends WebSocketServer {
 
                 if (!Formats.available.contains(tellPacket.mode)) {
                     var err = ClientErrors.INVALID_MODE;
-                    conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
+                    conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
                     return;
                 }
 
@@ -207,7 +207,7 @@ public class WsServer extends WebSocketServer {
                 break;
             default:
                 var err = ClientErrors.UNKNOWN_TYPE;
-                conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
+                conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
                 break;
         }
     }
@@ -221,20 +221,20 @@ public class WsServer extends WebSocketServer {
                 address = client.address;
             }
 
-            Chatbox.LOGGER.error("WebSocket client failure {}", address);
-            Chatbox.LOGGER.error("Exception thrown:", ex);
+            RccChatbox.LOGGER.error("WebSocket client failure {}", address);
+            RccChatbox.LOGGER.error("Exception thrown:", ex);
         } else {
-            Chatbox.LOGGER.error("WebSocket failure", ex);
+            RccChatbox.LOGGER.error("WebSocket failure", ex);
         }
     }
 
     @Override
     public void onStart() {
-        Chatbox.LOGGER.info("WebSocket server listening on port {}", getPort());
+        RccChatbox.LOGGER.info("WebSocket server listening on port {}", getPort());
     }
 
     public void broadcastEvent(Object packet, @Nullable Capability capability) {
-        var msg = Chatbox.GSON.toJson(packet);
+        var msg = RccChatbox.GSON.toJson(packet);
 
         if (capability == null) {
             broadcast(msg);
@@ -255,7 +255,7 @@ public class WsServer extends WebSocketServer {
     }
 
     public void broadcastOwnerEvent(Object packet, @Nullable Capability capability, UUID ownerId) {
-        var msg = Chatbox.GSON.toJson(packet);
+        var msg = RccChatbox.GSON.toJson(packet);
 
         List<WebSocket> recipients;
         var ownerClients = clients

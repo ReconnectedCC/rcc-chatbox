@@ -10,7 +10,7 @@ import cc.reconnected.chatbox.packets.serverPackets.events.ChatboxChatEvent;
 import cc.reconnected.chatbox.utils.DateUtils;
 import cc.reconnected.chatbox.utils.TextComponents;
 import cc.reconnected.chatbox.ws.ClientErrors;
-import cc.reconnected.server.api.PlayerMeta;
+import cc.reconnected.library.data.PlayerMeta;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.kyori.adventure.text.Component;
@@ -57,7 +57,7 @@ public class ClientPacketsHandler {
 
             if (msg.type == MessageTypes.SAY) {
                 mcServer.getPlayerManager().getPlayerList().forEach(player -> player.sendMessage(msg.message));
-                msg.conn.send(Chatbox.GSON.toJson(new SuccessPacket("message_sent", msg.id)));
+                msg.conn.send(RccChatbox.GSON.toJson(new SuccessPacket("message_sent", msg.id)));
 
                 // Emit chat_chatbox event
                 if(msg.sayPacket == null)
@@ -76,27 +76,27 @@ public class ClientPacketsHandler {
                 chatboxChatPacket.time = DateUtils.getTime(new Date());
                 chatboxChatPacket.user = msg.ownerUser;
 
-                Chatbox.getInstance().wss().broadcastEvent(chatboxChatPacket, Capability.READ);
+                RccChatbox.getInstance().wss().broadcastEvent(chatboxChatPacket, Capability.READ);
             } else if (msg.type == MessageTypes.TELL) {
                 var player = server.getPlayerManager().getPlayer(msg.player);
                 if (player == null) {
                     var err = ClientErrors.UNKNOWN_USER;
-                    msg.conn.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, msg.id)));
+                    msg.conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, msg.id)));
                     continue;
                 }
                 player.sendMessage(msg.message);
 
-                msg.conn.send(Chatbox.GSON.toJson(new SuccessPacket("message_sent", msg.id)));
+                msg.conn.send(RccChatbox.GSON.toJson(new SuccessPacket("message_sent", msg.id)));
             }
         }
     }
 
     private static String enqueueAndResult(UUID licenseId, ClientMessage message, int id) {
         if (tryEnqueue(licenseId, message)) {
-            return Chatbox.GSON.toJson(new SuccessPacket("message_queued", id));
+            return RccChatbox.GSON.toJson(new SuccessPacket("message_queued", id));
         } else {
             var err = ClientErrors.RATE_LIMITED;
-            return Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id));
+            return RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id));
         }
     }
 
@@ -138,7 +138,7 @@ public class ClientPacketsHandler {
             var player = mcServer.getPlayerManager().getPlayer(packet.user);
             if (player == null) {
                 var err = ClientErrors.UNKNOWN_USER;
-                client.webSocket.send(Chatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, packet.id)));
+                client.webSocket.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, packet.id)));
                 return;
             }
 

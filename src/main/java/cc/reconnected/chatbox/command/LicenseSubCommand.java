@@ -1,6 +1,6 @@
 package cc.reconnected.chatbox.command;
 
-import cc.reconnected.chatbox.Chatbox;
+import cc.reconnected.chatbox.RccChatbox;
 import cc.reconnected.chatbox.license.Capability;
 import cc.reconnected.chatbox.license.License;
 import cc.reconnected.chatbox.ws.CloseCodes;
@@ -90,7 +90,7 @@ public class LicenseSubCommand {
                         context.getSource().sendFeedback(() -> Text.literal("This command can only be executed by players!"), false);
                         return 0;
                     }
-                    var manager = Chatbox.licenseManager();
+                    var manager = RccChatbox.licenseManager();
                     final var userId = context.getSource().getPlayer().getUuid();
                     var userLicense = manager.getLicenseFromUser(userId);
                     if (userLicense == null) {
@@ -119,7 +119,7 @@ public class LicenseSubCommand {
                                 context.getSource().sendFeedback(() -> Text.literal("This command can only be executed by players!"), false);
                                 return 0;
                             }
-                            var manager = Chatbox.licenseManager();
+                            var manager = RccChatbox.licenseManager();
                             final var userId = context.getSource().getPlayer().getUuid();
                             var userLicense = manager.getLicenseFromUser(userId);
                             var createNew = userLicense == null;
@@ -138,7 +138,7 @@ public class LicenseSubCommand {
                                 context.getSource().sendFeedback(() -> Text.literal("This command can only be executed by players!"), false);
                                 return 0;
                             }
-                            var manager = Chatbox.licenseManager();
+                            var manager = RccChatbox.licenseManager();
                             var userLicense = manager.getLicenseFromUser(context.getSource().getPlayer().getUuid());
                             if (userLicense == null) {
                                 var text = Component.empty().append(ChatboxCommand.prefix)
@@ -155,7 +155,7 @@ public class LicenseSubCommand {
                                 var text = Component.empty().append(ChatboxCommand.prefix)
                                         .append(Component.text("Your license has been revoked!").color(NamedTextColor.GREEN));
                                 context.getSource().sendMessage(text);
-                                Chatbox.getInstance().wss().closeLicenseClients(licenseUuid, CloseCodes.CHANGED_LICENSE_KEY);
+                                RccChatbox.getInstance().wss().closeLicenseClients(licenseUuid, CloseCodes.CHANGED_LICENSE_KEY);
                             } else {
                                 var text = Component.empty().append(ChatboxCommand.prefix)
                                         .append(Component.text("There was an error revoking your license!").color(NamedTextColor.RED));

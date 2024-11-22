@@ -1,7 +1,7 @@
 package cc.reconnected.chatbox.license;
 
-import cc.reconnected.chatbox.Chatbox;
-import cc.reconnected.server.api.PlayerMeta;
+import cc.reconnected.chatbox.RccChatbox;
+import cc.reconnected.library.data.PlayerMeta;
 import com.google.gson.reflect.TypeToken;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,17 +33,17 @@ public class LicenseManager {
 
         // Manage dedicated data for licenses.
         // Minecraft's persistent state loses data on crashes, the chatbox licenses should not depend on a stable state of the world data
-        licensesPath = Chatbox.dataDirectory().resolve("licenses.json");
+        licensesPath = RccChatbox.dataDirectory().resolve("licenses.json");
 
         if (licensesPath.toFile().exists()) {
             try (var stream = new BufferedReader(new FileReader(licensesPath.toFile(), StandardCharsets.UTF_8))) {
                 var type = new TypeToken<ConcurrentHashMap<UUID, License>>() {
                 }.getType();
-                licenses = Chatbox.GSON.fromJson(stream, type);
+                licenses = RccChatbox.GSON.fromJson(stream, type);
             } catch (FileNotFoundException e) {
-                Chatbox.LOGGER.error("If you read this I messed up", e);
+                RccChatbox.LOGGER.error("If you read this I messed up", e);
             } catch (IOException e) {
-                Chatbox.LOGGER.error("Exception reading licenses data", e);
+                RccChatbox.LOGGER.error("Exception reading licenses data", e);
             }
         } else {
             licenses = new ConcurrentHashMap<>();
@@ -51,11 +51,11 @@ public class LicenseManager {
     }
 
     private void saveData() {
-        var output = Chatbox.GSON.toJson(licenses);
+        var output = RccChatbox.GSON.toJson(licenses);
         try (var stream = new FileWriter(licensesPath.toFile(), StandardCharsets.UTF_8)) {
             stream.write(output);
         } catch (IOException e) {
-            Chatbox.LOGGER.error("Exception saving licenses data", e);
+            RccChatbox.LOGGER.error("Exception saving licenses data", e);
         }
     }
 
@@ -75,7 +75,7 @@ public class LicenseManager {
             return licenses.get(licenseId);
         }
 
-        var serverState = Chatbox.getInstance().serverState();
+        var serverState = RccChatbox.getInstance().serverState();
         if (!serverState.licenses.containsKey(licenseId))
             return null;
 
@@ -160,7 +160,7 @@ public class LicenseManager {
         playerData.delete(KEYS.licenseUuid).join();
         playerData.delete(KEYS.capabilities).join();
 
-        Chatbox.getInstance().serverState().licenses.remove(license.uuid());
+        RccChatbox.getInstance().serverState().licenses.remove(license.uuid());
         licenses.remove(license.uuid());
 
         saveData();

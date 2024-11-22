@@ -1,10 +1,11 @@
-package cc.reconnected.chatbox;
+package cc.reconnected.chatbox.listeners;
 
+import cc.reconnected.chatbox.RccChatbox;
+import cc.reconnected.chatbox.ClientPacketsHandler;
 import cc.reconnected.chatbox.api.events.ClientConnectionEvents;
 import cc.reconnected.chatbox.api.events.PlayerCommandEvent;
 import cc.reconnected.chatbox.state.StateSaverAndLoader;
 import cc.reconnected.chatbox.license.Capability;
-import cc.reconnected.chatbox.models.DiscordUser;
 import cc.reconnected.chatbox.packets.serverPackets.HelloPacket;
 import cc.reconnected.chatbox.packets.serverPackets.PlayersPacket;
 import cc.reconnected.chatbox.packets.serverPackets.events.*;
@@ -12,14 +13,8 @@ import cc.reconnected.chatbox.models.User;
 import cc.reconnected.chatbox.utils.DateUtils;
 import cc.reconnected.chatbox.ws.CloseCodes;
 import cc.reconnected.chatbox.ws.WsServer;
-import cc.reconnected.discordbridge.events.DiscordMessageEvents;
-import cc.reconnected.server.api.PlayerMeta;
-import cc.reconnected.server.api.events.PlayerActivityEvents;
-import cc.reconnected.server.api.events.RestartEvents;
-import cc.reconnected.server.core.BossBarManager;
-import cc.reconnected.server.parser.MarkdownParser;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.Message;
+import cc.reconnected.library.data.PlayerMeta;
+import cc.reconnected.library.text.parser.MarkdownParser;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -30,11 +25,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import org.jetbrains.annotations.Nullable;
 
 import java.net.InetSocketAddress;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
 
 public class ChatboxEvents {
@@ -44,10 +36,6 @@ public class ChatboxEvents {
     public static final HashMap<UUID, Boolean> spyingPlayers = new HashMap<>();
 
     private static MinecraftServer mcServer;
-    @Nullable
-    private static BossBarManager.TimeBar restartBar = null;
-    @Nullable
-    private static ServerRestartScheduledEvent restartScheduledEvent = null;
 
     public static void register() {
         ClientPacketsHandler.register();
@@ -69,41 +57,30 @@ public class ChatboxEvents {
                 license.user = helloPacket.licenseOwnerUser;
             }
 
-            var packetJson = Chatbox.GSON.toJson(helloPacket);
+            var packetJson = RccChatbox.GSON.toJson(helloPacket);
             conn.send(packetJson);
-
-            if (license.capabilities().contains(Capability.READ)) {
-                var playersPacket = Chatbox.GSON.toJson(ChatboxEvents.createPlayersPacket());
-                conn.send(playersPacket);
-
-                if (restartBar != null) {
-                    fixRestartTime();
-                    var restartPacket = Chatbox.GSON.toJson(restartScheduledEvent);
-                    conn.send(restartPacket);
-                }
-            }
         });
 
         ServerLifecycleEvents.SERVER_STARTING.register(server ->
                 mcServer = server);
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-            var wss = new WsServer(new InetSocketAddress(Chatbox.CONFIG.hostname(), Chatbox.CONFIG.port()));
+            var wss = new WsServer(new InetSocketAddress(RccChatbox.CONFIG.hostname, RccChatbox.CONFIG.port));
 
             var wssThread = new Thread(wss::start);
             wssThread.start();
 
-            Chatbox.getInstance().wss(wss);
+            RccChatbox.getInstance().wss(wss);
         });
 
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
-            if (Chatbox.getInstance().wss() != null) {
+            if (RccChatbox.getInstance().wss() != null) {
                 try {
-                    var wss = Chatbox.getInstance().wss();
+                    var wss = RccChatbox.getInstance().wss();
                     wss.closeAllClients(CloseCodes.SERVER_STOPPING);
                     wss.stop();
                 } catch (InterruptedException e) {
-                    Chatbox.LOGGER.error("Failed to stop WebSocket server", e);
+                    RccChatbox.LOGGER.error("Failed to stop WebSocket server", e);
                 }
             }
         });
@@ -116,11 +93,11 @@ public class ChatboxEvents {
             var playerState = StateSaverAndLoader.getPlayerState(handler.getPlayer());
             spyingPlayers.put(handler.getPlayer().getUuid(), playerState.enableSpy);
 
-            Chatbox.getInstance().wss().broadcastEvent(joinPacket, Capability.READ);
+            RccChatbox.getInstance().wss().broadcastEvent(joinPacket, Capability.READ);
 
             var list = new ArrayList<>(server.getPlayerManager().getPlayerList());
             list.add(handler.getPlayer());
-            Chatbox.getInstance().wss().broadcastEvent(createPlayersPacket(list), Capability.READ);
+            RccChatbox.getInstance().wss().broadcastEvent(createPlayersPacket(list), Capability.READ);
         });
 
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
@@ -130,11 +107,11 @@ public class ChatboxEvents {
 
             spyingPlayers.remove(handler.getPlayer().getUuid());
 
-            Chatbox.getInstance().wss().broadcastEvent(leavePacket, Capability.READ);
+            RccChatbox.getInstance().wss().broadcastEvent(leavePacket, Capability.READ);
 
             var list = new ArrayList<>(server.getPlayerManager().getPlayerList());
             list.removeIf(p -> p.getUuid() == handler.getPlayer().getUuid());
-            Chatbox.getInstance().wss().broadcastEvent(createPlayersPacket(list), Capability.READ);
+            RccChatbox.getInstance().wss().broadcastEvent(createPlayersPacket(list), Capability.READ);
         });
 
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
@@ -154,7 +131,7 @@ public class ChatboxEvents {
             }
             deathPacket.time = DateUtils.getTime(new Date());
 
-            Chatbox.getInstance().wss().broadcastEvent(deathPacket, Capability.READ);
+            RccChatbox.getInstance().wss().broadcastEvent(deathPacket, Capability.READ);
         });
 
         ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register((player, origin, destination) -> {
@@ -165,12 +142,8 @@ public class ChatboxEvents {
             worldChangePacket.destination = destination.getRegistryKey().getValue().toString();
             worldChangePacket.time = DateUtils.getTime(new Date());
 
-            Chatbox.getInstance().wss().broadcastEvent(worldChangePacket, Capability.READ);
+            RccChatbox.getInstance().wss().broadcastEvent(worldChangePacket, Capability.READ);
         });
-
-        // discord chat events
-        DiscordMessageEvents.MESSAGE_CREATE.register((message, member) -> emitDiscordChatEvent(message, member, false));
-        DiscordMessageEvents.MESSAGE_EDIT.register((message, member) -> emitDiscordChatEvent(message, member, true));
 
         // chat messages
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
@@ -183,7 +156,7 @@ public class ChatboxEvents {
             packet.time = DateUtils.getTime(new Date());
             packet.user = User.create(sender);
 
-            Chatbox.getInstance().wss().broadcastEvent(packet, Capability.READ);
+            RccChatbox.getInstance().wss().broadcastEvent(packet, Capability.READ);
         });
 
         // Handle chatbox command packet sending
@@ -196,9 +169,9 @@ public class ChatboxEvents {
             packet.time = DateUtils.getTime(new Date());
 
             if (ownerOnly) {
-                Chatbox.getInstance().wss().broadcastOwnerEvent(packet, Capability.COMMAND, player.getUuid());
+                RccChatbox.getInstance().wss().broadcastOwnerEvent(packet, Capability.COMMAND, player.getUuid());
             } else {
-                Chatbox.getInstance().wss().broadcastEvent(packet, Capability.COMMAND);
+                RccChatbox.getInstance().wss().broadcastEvent(packet, Capability.COMMAND);
             }
         });
 
@@ -215,7 +188,7 @@ public class ChatboxEvents {
             var isOwnerOnly = ownerPrefixes.contains(prefix);
 
             var cbLog = String.format("%s: %s", sender.getName().getString(), content);
-            Chatbox.LOGGER.info(cbLog);
+            RccChatbox.LOGGER.info(cbLog);
 
             var tokens = content.split(" +");
 
@@ -247,81 +220,6 @@ public class ChatboxEvents {
 
             return false;
         });
-
-        PlayerActivityEvents.AFK.register((player, server) -> {
-            var packet = new AfkEvent();
-            packet.user = User.create(player);
-            packet.time = DateUtils.getTime(new Date());
-
-            Chatbox.getInstance().wss().broadcastEvent(packet, Capability.READ);
-        });
-
-        PlayerActivityEvents.AFK_RETURN.register((player, server) -> {
-            var packet = new AfkEvent();
-            packet.user = User.create(player);
-            packet.time = DateUtils.getTime(new Date());
-
-            Chatbox.getInstance().wss().broadcastEvent(packet, Capability.READ);
-        });
-
-        RestartEvents.SCHEDULED.register(timeBar -> {
-            restartBar = timeBar;
-            var packet = new ServerRestartScheduledEvent();
-            var now = new Date();
-            var duration = Duration.ofSeconds(timeBar.getTime());
-            var restartAt = duration.addTo(now.toInstant());
-            var restartAtDate = Date.from(Instant.from(restartAt));
-
-            packet.time = DateUtils.getTime(now);
-            packet.restartAt = DateUtils.getTime(restartAtDate);
-            packet.restartType = "automatic"; // manual currently not supported
-
-            fixRestartTime();
-
-            Chatbox.getInstance().wss().broadcastEvent(packet, Capability.READ);
-        });
-
-        RestartEvents.CANCELED.register(timeBar -> {
-            if (restartScheduledEvent == null)
-                return;
-
-            var packet = new ServerRestartCancelledEvent();
-            packet.time = DateUtils.getTime(new Date());
-            packet.restartType = restartScheduledEvent.restartType;
-
-            restartBar = null;
-            restartScheduledEvent = null;
-            Chatbox.getInstance().wss().broadcastEvent(packet, Capability.READ);
-        });
-    }
-
-    private static void fixRestartTime() {
-        if (restartScheduledEvent == null)
-            return;
-
-        restartScheduledEvent.restartSeconds = restartBar.getRemainingSeconds();
-    }
-
-    private static void emitDiscordChatEvent(Message message, Member member, boolean isEdited) {
-        var user = DiscordUser.fromMember(member, true);
-        var packet = new DiscordChatEvent();
-        packet.text = message.getContentStripped();
-        packet.rawText = message.getContentRaw();
-        packet.renderedText = Text.Serializer.toJsonTree(MarkdownParser.defaultParser.parseNode(message.getContentDisplay()).toText());
-        packet.discordId = message.getId();
-        packet.discordUser = user;
-        packet.edited = isEdited;
-
-        var messageOffsetDate = isEdited ? message.getTimeEdited() : message.getTimeCreated();
-        Date messageDate;
-        if (messageOffsetDate != null) {
-            messageDate = new Date(messageOffsetDate.toInstant().toEpochMilli());
-        } else {
-            messageDate = new Date();
-        }
-        packet.time = DateUtils.getTime(messageDate);
-
-        Chatbox.getInstance().wss().broadcastEvent(packet, Capability.READ);
     }
 
     public static PlayersPacket createPlayersPacket(List<ServerPlayerEntity> list) {

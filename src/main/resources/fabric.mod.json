@@ -16,7 +16,7 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "cc.reconnected.chatbox.Chatbox"
+      "cc.reconnected.chatbox.RccChatbox"
     ]
   },
   "mixins": [],
@@ -25,8 +25,11 @@
     "minecraft": "~1.20.1",
     "java": ">=17",
     "fabric-api": "*",
-    "rcc-server": ">=1.16.1",
-    "rcc-discord": ">=1.7.9",
+    "rcc-library": ">=1.0.0",
     "luckperms": ">=5.4"
+  },
+  "suggests": {
+    "rcc-essentials": ">=1.18.0",
+    "rcc-discord": ">=1.8.0"
   }
 }

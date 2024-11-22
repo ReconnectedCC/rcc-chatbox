@@ -1,6 +1,6 @@
 package cc.reconnected.chatbox.command;
 
-import cc.reconnected.chatbox.ChatboxEvents;
+import cc.reconnected.chatbox.listeners.ChatboxEvents;
 import cc.reconnected.chatbox.state.StateSaverAndLoader;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;

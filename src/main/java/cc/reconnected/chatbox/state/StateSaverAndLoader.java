@@ -1,6 +1,6 @@
 package cc.reconnected.chatbox.state;
 
-import cc.reconnected.chatbox.Chatbox;
+import cc.reconnected.chatbox.RccChatbox;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.MinecraftServer;
@@ -61,7 +61,7 @@ public class StateSaverAndLoader extends PersistentState {
         var state = persistentStateManager.getOrCreate(
                 StateSaverAndLoader::createFromNbt,
                 StateSaverAndLoader::new,
-                Chatbox.MOD_ID
+                RccChatbox.MOD_ID
         );
         state.markDirty();
         return state;

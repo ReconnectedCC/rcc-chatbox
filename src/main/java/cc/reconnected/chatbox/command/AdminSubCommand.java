@@ -1,19 +1,16 @@
 package cc.reconnected.chatbox.command;
 
-import cc.reconnected.chatbox.Chatbox;
+import cc.reconnected.chatbox.RccChatbox;
 import cc.reconnected.chatbox.license.Capability;
 import cc.reconnected.chatbox.license.License;
 import cc.reconnected.chatbox.ws.CloseCodes;
-import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import me.lucko.fabric.api.permissions.v0.Permissions;
-import net.kyori.adventure.text.Component;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.command.CommandSource;
-import net.minecraft.command.argument.GameProfileArgumentType;
 import net.minecraft.server.PlayerManager;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
@@ -42,9 +39,9 @@ public class AdminSubCommand {
             uuid = player.getGameProfile().getId();
         }
 
-        var license = Chatbox.licenseManager().getLicense(uuid);
+        var license = RccChatbox.licenseManager().getLicense(uuid);
         if (license == null) {
-            license = Chatbox.licenseManager().getLicenseFromUser(uuid);
+            license = RccChatbox.licenseManager().getLicenseFromUser(uuid);
         }
 
         return license;
@@ -81,7 +78,7 @@ public class AdminSubCommand {
                                     .stream()
                                     .map(player -> player.getGameProfile().getName())
                                     .toList());
-                            list.addAll(Chatbox.licenseManager().getLicenseList());
+                            list.addAll(RccChatbox.licenseManager().getLicenseList());
                             return CommandSource.suggestMatching(
                                     list,
                                     builder
@@ -135,8 +132,8 @@ public class AdminSubCommand {
                                         playerName = player.getGameProfile().getName();
                                     }
 
-                                    Chatbox.licenseManager().deleteLicense(license.uuid());
-                                    Chatbox.getInstance().wss().closeLicenseClients(license.uuid(), CloseCodes.CHANGED_LICENSE_KEY);
+                                    RccChatbox.licenseManager().deleteLicense(license.uuid());
+                                    RccChatbox.getInstance().wss().closeLicenseClients(license.uuid(), CloseCodes.CHANGED_LICENSE_KEY);
 
                                     final var finalPlayerName = playerName;
                                     context.getSource().sendFeedback(() -> Text.empty().append(prefix).append(Text.literal("Revoked " + finalPlayerName + " license!").setStyle(Style.EMPTY.withColor(Formatting.GREEN))), true);
@@ -186,7 +183,7 @@ public class AdminSubCommand {
                                                         playerName = player.getGameProfile().getName();
                                                     }
 
-                                                    var licenseManager = Chatbox.licenseManager();
+                                                    var licenseManager = RccChatbox.licenseManager();
 
                                                     var capability = Capability.valueOf(capabilityName);
 

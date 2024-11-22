@@ -1,8 +1,8 @@
 package cc.reconnected.chatbox.utils;
 
 import cc.reconnected.chatbox.parsers.MiniMessageSerializer;
-import cc.reconnected.server.api.PlayerMeta;
-import cc.reconnected.server.parser.MarkdownParser;
+import cc.reconnected.library.data.PlayerMeta;
+import cc.reconnected.library.text.parser.MarkdownParser;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;

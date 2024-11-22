@@ -1,6 +1,6 @@
 package cc.reconnected.chatbox.models;
 
-import cc.reconnected.discordbridge.Bridge;
+import cc.reconnected.discordbridge.RccDiscord;
 import net.dv8tion.jda.api.entities.Member;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,8 +36,8 @@ public class DiscordUser {
             lRole.colour = role.getColorRaw();
         }
 
-        if (resolveLinkedUser && Bridge.discordLinks.containsKey(user.id)) {
-            var playerUuid = Bridge.discordLinks.get(user.id);
+        if (resolveLinkedUser && RccDiscord.discordLinks.containsKey(user.id)) {
+            var playerUuid = RccDiscord.discordLinks.get(user.id);
             user.linkedUser = User.tryGet(playerUuid, false);
         }
 
