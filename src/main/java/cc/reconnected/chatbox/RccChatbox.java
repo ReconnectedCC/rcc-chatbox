@@ -10,6 +10,7 @@ import cc.reconnected.chatbox.license.LicenseManager;
 import cc.reconnected.chatbox.ws.WsServer;
 import cc.reconnected.discordbridge.RccDiscordConfig;
 import cc.reconnected.library.config.Config;
+import cc.reconnected.library.config.ConfigManager;
 import com.google.gson.Gson;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -68,6 +69,14 @@ public class RccChatbox implements ModInitializer {
 
     @Override
     public void onInitialize() {
+
+        try {
+            CONFIG = ConfigManager.load(RccChatboxConfig.class);
+        } catch (Exception e) {
+            LOGGER.error("Failed to load config. Refusing to continue.", e);
+            return;
+        }
+
         CommandRegistrationCallback.EVENT.register(ChatboxCommand::register);
 
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
