@@ -18,20 +18,20 @@ import org.jetbrains.annotations.Nullable;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 public class WsServer extends WebSocketServer {
     public static final Pattern PATH_LICENSE = Pattern.compile("^/([0-9a-z-]+)$", Pattern.CASE_INSENSITIVE);
-    private final HashMap<WebSocket, ChatboxClient> clients = new HashMap<>();
+    private final ConcurrentHashMap<WebSocket, ChatboxClient> clients = new ConcurrentHashMap<>();
     private final InetAddress guestAddress;
     public static final int messageMaxLength = 1024;
     public static final int nameMaxLength = 64;
 
-    public HashMap<WebSocket, ChatboxClient> clients() {
+    public ConcurrentHashMap<WebSocket, ChatboxClient> clients() {
         return clients;
     }
 
