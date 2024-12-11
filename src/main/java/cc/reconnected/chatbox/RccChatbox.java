@@ -3,13 +3,11 @@ package cc.reconnected.chatbox;
 import cc.reconnected.chatbox.command.ChatboxCommand;
 import cc.reconnected.chatbox.listeners.ChatboxEvents;
 import cc.reconnected.chatbox.listeners.DiscordEvents;
-import cc.reconnected.chatbox.listeners.EssentialsEvents;
+import cc.reconnected.chatbox.listeners.SolsticeEvents;
 import cc.reconnected.chatbox.packets.serverPackets.PingPacket;
 import cc.reconnected.chatbox.state.StateSaverAndLoader;
 import cc.reconnected.chatbox.license.LicenseManager;
 import cc.reconnected.chatbox.ws.WsServer;
-import cc.reconnected.discordbridge.RccDiscordConfig;
-import cc.reconnected.library.config.Config;
 import cc.reconnected.library.config.ConfigManager;
 import com.google.gson.Gson;
 import net.fabricmc.api.ModInitializer;
@@ -67,6 +65,14 @@ public class RccChatbox implements ModInitializer {
         return serverState;
     }
 
+    public static boolean isSolsticeLoaded() {
+        return FabricLoader.getInstance().isModLoaded("solstice");
+    }
+
+    public static boolean isRccDiscordLoaded() {
+        return FabricLoader.getInstance().isModLoaded("rcc-discord");
+    }
+
     @Override
     public void onInitialize() {
 
@@ -103,11 +109,10 @@ public class RccChatbox implements ModInitializer {
 
         ChatboxEvents.register();
 
-        var fabricLoader = FabricLoader.getInstance();
-        if(fabricLoader.isModLoaded("rcc-essentials")) {
-            EssentialsEvents.register();
+        if(isSolsticeLoaded()) {
+            SolsticeEvents.register();
         }
-        if(fabricLoader.isModLoaded("rcc-discord")) {
+        if(isRccDiscordLoaded()) {
             DiscordEvents.register();
         }
     }

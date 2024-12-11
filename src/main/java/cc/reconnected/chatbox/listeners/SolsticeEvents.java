@@ -8,18 +8,18 @@ import cc.reconnected.chatbox.packets.serverPackets.events.AfkEvent;
 import cc.reconnected.chatbox.packets.serverPackets.events.ServerRestartCancelledEvent;
 import cc.reconnected.chatbox.packets.serverPackets.events.ServerRestartScheduledEvent;
 import cc.reconnected.chatbox.utils.DateUtils;
-import cc.reconnected.essentials.api.events.PlayerActivityEvents;
-import cc.reconnected.essentials.api.events.RestartEvents;
-import cc.reconnected.essentials.core.BossBarManager;
+import me.alexdevs.solstice.api.events.PlayerActivityEvents;
+import me.alexdevs.solstice.api.events.RestartEvents;
+import me.alexdevs.solstice.modules.timebar.TimeBar;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 
-public class EssentialsEvents {
+public class SolsticeEvents {
     @Nullable
-    private static BossBarManager.TimeBar restartBar = null;
+    private static TimeBar restartBar = null;
 
     @Nullable
     private static ServerRestartScheduledEvent restartScheduledEvent = null;

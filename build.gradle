@@ -22,6 +22,8 @@ repositories {
     maven { url 'https://maven.nucleoid.xyz' }
 
     maven { url 'https://repo.minebench.de' }
+
+    maven { url 'https://maven.alexdevs.me/releases' }
 }
 
 dependencies {
@@ -44,7 +46,8 @@ dependencies {
 
     modImplementation "cc.reconnected:rcc-library:${project.rcclibrary_version}"
     modImplementation "cc.reconnected:rcc-discord:${project.rccdiscord_version}"
-    modImplementation "cc.reconnected:rcc-essentials:${project.rccessentials_version}"
+
+    modImplementation "me.alexdevs:solstice:${project.solstice_version}"
 
     include implementation("org.java-websocket:Java-WebSocket:${project.websocket_version}")
 
