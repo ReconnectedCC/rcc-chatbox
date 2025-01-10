@@ -10,7 +10,7 @@ import cc.reconnected.chatbox.packets.serverPackets.events.ServerRestartSchedule
 import cc.reconnected.chatbox.utils.DateUtils;
 import me.alexdevs.solstice.api.events.PlayerActivityEvents;
 import me.alexdevs.solstice.api.events.RestartEvents;
-import me.alexdevs.solstice.modules.timebar.TimeBar;
+import me.alexdevs.solstice.modules.timeBar.TimeBar;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
