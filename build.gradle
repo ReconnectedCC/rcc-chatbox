@@ -24,6 +24,16 @@ repositories {
     maven { url 'https://repo.minebench.de' }
 
     maven { url 'https://maven.alexdevs.me/releases' }
+
+    // trinkets deps
+    maven {
+        name = "TerraformersMC"
+        url = "https://maven.terraformersmc.com/"
+    }
+    maven {
+        name = "Ladysnake Libs"
+        url = 'https://maven.ladysnake.org/releases'
+    }
 }
 
 dependencies {
@@ -47,7 +57,8 @@ dependencies {
     modImplementation "cc.reconnected:rcc-library:${project.rcclibrary_version}"
     modImplementation "cc.reconnected:rcc-discord:${project.rccdiscord_version}"
 
-    modImplementation "me.alexdevs:solstice:${project.solstice_version}"
+    modCompileOnly "me.alexdevs:solstice:${project.solstice_version}"
+    modRuntimeOnly "me.alexdevs:solstice:${project.solstice_version}"
 
     include implementation("org.java-websocket:Java-WebSocket:${project.websocket_version}")
 

@@ -29,7 +29,7 @@
     "luckperms": ">=5.4"
   },
   "suggests": {
-    "solstice": ">=1.0.0+1.20.1",
+    "solstice": ">=1.6.0+1.20.1",
     "rcc-discord": ">=1.8.1"
   }
 }

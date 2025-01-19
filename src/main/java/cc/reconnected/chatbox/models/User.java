@@ -28,7 +28,7 @@ public class User {
         PlayerMeta playerData;
         if(entity != null) {
             playerData = PlayerMeta.getPlayer(entity);
-            user.afk = AfkTracker.isPlayerAfk(entity.getUuid());
+            user.afk = AfkTracker.isPlayerAfk(entity);
         } else {
             playerData = PlayerMeta.getPlayer(UUID.fromString(user.uuid));
             user.afk = false;
