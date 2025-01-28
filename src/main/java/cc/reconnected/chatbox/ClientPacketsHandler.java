@@ -9,6 +9,7 @@ import cc.reconnected.chatbox.packets.serverPackets.SuccessPacket;
 import cc.reconnected.chatbox.packets.serverPackets.events.ChatboxChatEvent;
 import cc.reconnected.chatbox.utils.DateUtils;
 import cc.reconnected.chatbox.utils.TextComponents;
+import cc.reconnected.chatbox.utils.Webhook;
 import cc.reconnected.chatbox.ws.ClientErrors;
 import cc.reconnected.library.data.PlayerMeta;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -56,6 +57,7 @@ public class ClientPacketsHandler {
             }
 
             if (msg.type == MessageTypes.SAY) {
+                Webhook.send(uuid, msg, null);
                 mcServer.getPlayerManager().getPlayerList().forEach(player -> player.sendMessage(msg.message));
                 msg.conn.send(RccChatbox.GSON.toJson(new SuccessPacket("message_sent", msg.id)));
 
@@ -84,6 +86,7 @@ public class ClientPacketsHandler {
                     msg.conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, msg.id)));
                     continue;
                 }
+                Webhook.send(uuid, msg, player);
                 player.sendMessage(msg.message);
 
                 msg.conn.send(RccChatbox.GSON.toJson(new SuccessPacket("message_sent", msg.id)));
