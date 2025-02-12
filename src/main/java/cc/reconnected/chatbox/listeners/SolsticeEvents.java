@@ -16,6 +16,7 @@ import org.jetbrains.annotations.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Locale;
 
 public class SolsticeEvents {
     @Nullable
@@ -39,7 +40,7 @@ public class SolsticeEvents {
             }
         });
 
-        PlayerActivityEvents.AFK.register((player, server) -> {
+        PlayerActivityEvents.AFK.register((player) -> {
             var packet = new AfkEvent();
             packet.user = User.create(player);
             packet.time = DateUtils.getTime(new Date());
@@ -47,7 +48,7 @@ public class SolsticeEvents {
             RccChatbox.getInstance().wss().broadcastEvent(packet, Capability.READ);
         });
 
-        PlayerActivityEvents.AFK_RETURN.register((player, server) -> {
+        PlayerActivityEvents.AFK_RETURN.register((player, reason) -> {
             var packet = new AfkEvent();
             packet.user = User.create(player);
             packet.time = DateUtils.getTime(new Date());
@@ -55,7 +56,7 @@ public class SolsticeEvents {
             RccChatbox.getInstance().wss().broadcastEvent(packet, Capability.READ);
         });
 
-        RestartEvents.SCHEDULED.register(timeBar -> {
+        RestartEvents.SCHEDULED.register((timeBar, restartType) -> {
             restartBar = timeBar;
             var packet = new ServerRestartScheduledEvent();
             var now = new Date();
@@ -65,7 +66,7 @@ public class SolsticeEvents {
 
             packet.time = DateUtils.getTime(now);
             packet.restartAt = DateUtils.getTime(restartAtDate);
-            packet.restartType = "automatic"; // manual currently not supported
+            packet.restartType = restartType.name().toLowerCase(Locale.ROOT);
 
             fixRestartTime();
 
