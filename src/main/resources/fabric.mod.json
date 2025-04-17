@@ -22,14 +22,14 @@
   "mixins": [],
   "depends": {
     "fabricloader": ">=0.16.5",
-    "minecraft": "~1.20.1",
-    "java": ">=17",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
     "fabric-api": "*",
-    "rcc-library": ">=1.0.0",
+    "rcc-library": ">=1.0.2+1.21.1",
     "luckperms": ">=5.4"
   },
   "suggests": {
-    "solstice": ">=1.6.0+1.20.1",
-    "rcc-discord": ">=1.8.1"
+    "solstice": ">=1.8.0+1.21.1",
+    "rcc-discord": ">=1.8.5"
   }
 }
