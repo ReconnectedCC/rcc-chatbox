@@ -4,7 +4,6 @@ import cc.reconnected.chatbox.RccChatbox;
 import cc.reconnected.chatbox.parsers.MiniMessageSerializer;
 import cc.reconnected.library.data.PlayerMeta;
 import cc.reconnected.library.text.parser.MarkdownParser;
-import com.google.gson.JsonParser;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;

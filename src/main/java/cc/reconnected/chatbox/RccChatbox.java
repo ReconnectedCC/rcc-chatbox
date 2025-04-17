@@ -7,7 +7,6 @@ import cc.reconnected.chatbox.listeners.SolsticeEvents;
 import cc.reconnected.chatbox.packets.serverPackets.PingPacket;
 import cc.reconnected.chatbox.state.StateSaverAndLoader;
 import cc.reconnected.chatbox.license.LicenseManager;
-import cc.reconnected.chatbox.utils.Webhook;
 import cc.reconnected.chatbox.ws.WsServer;
 import cc.reconnected.library.config.ConfigManager;
 import com.google.gson.Gson;
