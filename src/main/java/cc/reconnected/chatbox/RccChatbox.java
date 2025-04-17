@@ -16,6 +16,7 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.WorldSavePath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,7 @@ public class RccChatbox implements ModInitializer {
     public static RccChatboxConfig CONFIG;
     public static final Gson GSON = new Gson();
     private static LicenseManager licenseManager;
+    public MinecraftServer server;
 
     private static RccChatbox INSTANCE;
 
@@ -87,6 +89,7 @@ public class RccChatbox implements ModInitializer {
         CommandRegistrationCallback.EVENT.register(ChatboxCommand::register);
 
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
+            this.server = server;
             dataDirectory = server.getSavePath(WorldSavePath.ROOT).resolve("data").resolve(MOD_ID);
             licenseManager = new LicenseManager();
             if (!dataDirectory.toFile().isDirectory()) {

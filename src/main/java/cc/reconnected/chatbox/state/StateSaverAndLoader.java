@@ -3,14 +3,22 @@ package cc.reconnected.chatbox.state;
 import cc.reconnected.chatbox.RccChatbox;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.PersistentState;
+import net.minecraft.world.PersistentStateManager;
 import net.minecraft.world.World;
 
 import java.util.HashMap;
 import java.util.UUID;
 
 public class StateSaverAndLoader extends PersistentState {
+    private static final Type<StateSaverAndLoader> type = new Type<>(
+            StateSaverAndLoader::createNew,
+            StateSaverAndLoader::createFromNbt,
+            null
+    );
+
     public final HashMap<UUID, ChatboxPlayerState> players = new HashMap<>();
 
     /**
@@ -21,7 +29,7 @@ public class StateSaverAndLoader extends PersistentState {
     public final HashMap<UUID, UUID> licenses = new HashMap<>();
 
     @Override
-    public NbtCompound writeNbt(NbtCompound nbt) {
+    public NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
         var playersNbt = new NbtCompound();
         players.forEach((uuid, data) -> {
             var playerNbt = new NbtCompound();
@@ -36,7 +44,7 @@ public class StateSaverAndLoader extends PersistentState {
         return nbt;
     }
 
-    public static StateSaverAndLoader createFromNbt(NbtCompound nbt) {
+    public static StateSaverAndLoader createFromNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
         var state = new StateSaverAndLoader();
 
         var playersNbt = nbt.getCompound("players");
@@ -56,11 +64,15 @@ public class StateSaverAndLoader extends PersistentState {
         return state;
     }
 
+    public static StateSaverAndLoader createNew() {
+        StateSaverAndLoader state = new StateSaverAndLoader();
+        return state;
+    }
+
     public static StateSaverAndLoader getServerState(MinecraftServer server) {
         var persistentStateManager = server.getWorld(World.OVERWORLD).getPersistentStateManager();
         var state = persistentStateManager.getOrCreate(
-                StateSaverAndLoader::createFromNbt,
-                StateSaverAndLoader::new,
+                type,
                 RccChatbox.MOD_ID
         );
         state.markDirty();

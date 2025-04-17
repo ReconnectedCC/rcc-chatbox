@@ -1,20 +1,21 @@
 package cc.reconnected.chatbox.listeners;
 
-import cc.reconnected.chatbox.RccChatbox;
 import cc.reconnected.chatbox.ClientPacketsHandler;
+import cc.reconnected.chatbox.RccChatbox;
 import cc.reconnected.chatbox.api.events.ClientConnectionEvents;
 import cc.reconnected.chatbox.api.events.PlayerCommandEvent;
-import cc.reconnected.chatbox.state.StateSaverAndLoader;
 import cc.reconnected.chatbox.license.Capability;
+import cc.reconnected.chatbox.models.User;
 import cc.reconnected.chatbox.packets.serverPackets.HelloPacket;
 import cc.reconnected.chatbox.packets.serverPackets.PlayersPacket;
 import cc.reconnected.chatbox.packets.serverPackets.events.*;
-import cc.reconnected.chatbox.models.User;
+import cc.reconnected.chatbox.state.StateSaverAndLoader;
 import cc.reconnected.chatbox.utils.DateUtils;
 import cc.reconnected.chatbox.ws.CloseCodes;
 import cc.reconnected.chatbox.ws.WsServer;
 import cc.reconnected.library.data.PlayerMeta;
 import cc.reconnected.library.text.parser.MarkdownParser;
+import com.google.gson.JsonParser;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -124,7 +125,8 @@ public class ChatboxEvents {
             var message = damageSource.getDeathMessage(entity);
             deathPacket.text = message.getString();
             deathPacket.rawText = message.getString();
-            deathPacket.renderedText = Text.Serializer.toJsonTree(message);
+            var json = Text.Serialization.toJsonString(message, mcServer.getRegistryManager());
+            deathPacket.renderedText = JsonParser.parseString(json);
             deathPacket.user = User.create(player);
             if (source instanceof ServerPlayerEntity) {
                 deathPacket.source = User.create((ServerPlayerEntity) source);
@@ -152,7 +154,8 @@ public class ChatboxEvents {
             var parsedMessage = MarkdownParser.defaultParser.parseNode(message.getContent().getString()).toText();
             packet.text = parsedMessage.getString();
             packet.rawText = message.getContent().getString();
-            packet.renderedText = Text.Serializer.toJsonTree(parsedMessage);
+            var json = Text.Serialization.toJsonString(message.getContent(), mcServer.getRegistryManager());
+            packet.renderedText = JsonParser.parseString(json);
             packet.time = DateUtils.getTime(new Date());
             packet.user = User.create(sender);
 

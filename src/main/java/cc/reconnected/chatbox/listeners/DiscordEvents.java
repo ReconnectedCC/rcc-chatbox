@@ -7,6 +7,7 @@ import cc.reconnected.chatbox.packets.serverPackets.events.DiscordChatEvent;
 import cc.reconnected.chatbox.utils.DateUtils;
 import cc.reconnected.discordbridge.events.DiscordMessageEvents;
 import cc.reconnected.library.text.parser.MarkdownParser;
+import com.google.gson.JsonParser;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.minecraft.text.Text;
@@ -25,7 +26,8 @@ public class DiscordEvents {
         var packet = new DiscordChatEvent();
         packet.text = message.getContentStripped();
         packet.rawText = message.getContentRaw();
-        packet.renderedText = Text.Serializer.toJsonTree(MarkdownParser.defaultParser.parseNode(message.getContentDisplay()).toText());
+        var json = Text.Serialization.toJsonString(MarkdownParser.defaultParser.parseNode(message.getContentDisplay()).toText(), RccChatbox.getInstance().server.getRegistryManager());
+        packet.renderedText = JsonParser.parseString(json);
         packet.discordId = message.getId();
         packet.discordUser = user;
         packet.edited = isEdited;

@@ -60,7 +60,7 @@ public class User {
     public static User create(ServerPlayerEntity player, boolean resolveDiscord) {
         var user = new User();
 
-        user.name = player.getEntityName();
+        user.name = player.getNameForScoreboard();
         user.uuid = player.getUuidAsString();
         user.displayName = player.getDisplayName().getString();
         user.world = player.getWorld().getRegistryKey().getValue().toString();

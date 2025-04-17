@@ -1,8 +1,10 @@
 package cc.reconnected.chatbox.utils;
 
+import cc.reconnected.chatbox.RccChatbox;
 import cc.reconnected.chatbox.parsers.MiniMessageSerializer;
 import cc.reconnected.library.data.PlayerMeta;
 import cc.reconnected.library.text.parser.MarkdownParser;
+import com.google.gson.JsonParser;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -41,7 +43,7 @@ public class TextComponents {
             case "markdown" -> {
                 var rawContent = MarkdownParser.defaultParser.parseNode(content).toText();
                 var json = JSONComponentSerializer.json();
-                formattedContent = json.deserialize(Text.Serializer.toJson(rawContent));
+                formattedContent = json.deserialize(Text.Serialization.toJsonString(rawContent, RccChatbox.getInstance().server.getRegistryManager()));
             }
             case "minimessage" -> formattedContent = MiniMessageSerializer.defaultSerializer.deserialize(content);
             default -> formattedContent = Component.text(content);

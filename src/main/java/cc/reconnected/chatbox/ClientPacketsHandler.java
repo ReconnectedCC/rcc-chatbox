@@ -12,6 +12,9 @@ import cc.reconnected.chatbox.utils.TextComponents;
 import cc.reconnected.chatbox.utils.Webhook;
 import cc.reconnected.chatbox.ws.ClientErrors;
 import cc.reconnected.library.data.PlayerMeta;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.kyori.adventure.text.Component;
@@ -72,8 +75,7 @@ public class ClientPacketsHandler {
                 chatboxChatPacket.rawName = msg.sayPacket.name != null ? msg.sayPacket.name : chatboxChatPacket.name;
                 // funky stuff
                 var json = JSONComponentSerializer.json().serialize(msg.content);
-                var mcText = Text.Serializer.fromJson(json);
-                chatboxChatPacket.renderedText = Text.Serializer.toJsonTree(mcText);
+                chatboxChatPacket.renderedText = JsonParser.parseString(json);
 
                 chatboxChatPacket.time = DateUtils.getTime(new Date());
                 chatboxChatPacket.user = msg.ownerUser;
