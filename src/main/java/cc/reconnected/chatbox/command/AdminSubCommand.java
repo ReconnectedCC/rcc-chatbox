@@ -57,8 +57,7 @@ public class AdminSubCommand {
                             //"<user/license> disable",
                             //"<user/license> enable",
                             "<user/license> capabilities",
-                            "<user/license> capabilities enable <capability>",
-                            "<user/license> capabilities disable <capability>",
+                            "<user/license> capabilities <capability> <true/false>",
                     };
 
                     final var text =
