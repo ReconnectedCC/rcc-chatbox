@@ -15,6 +15,7 @@ import cc.reconnected.chatbox.ws.CloseCodes;
 import cc.reconnected.chatbox.ws.WsServer;
 import cc.reconnected.library.data.PlayerMeta;
 import cc.reconnected.library.text.parser.MarkdownParser;
+import me.lucko.fabric.api.permissions.v0.Permissions;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -203,7 +204,7 @@ public class ChatboxEvents {
 
             PlayerCommandEvent.EVENT.invoker().onCommand(sender, command, args, isOwnerOnly);
 
-            if (!isOwnerOnly) {
+
                 var server = sender.getServer();
                 if (server == null)
                     return true;
@@ -214,11 +215,11 @@ public class ChatboxEvents {
                         .append(Component.literal(content).setStyle(Style.EMPTY.withColor(ChatFormatting.GRAY)));
 
                 playerManager.getPlayers().forEach(player -> {
-                    if (spyingPlayers.containsKey(player.getUUID()) && spyingPlayers.get(player.getUUID())) {
+                    if (shouldSpyCommand(player,sender, isOwnerOnly)) {
                         player.displayClientMessage(text, false);
                     }
                 });
-            }
+
 
             return false;
         });
@@ -243,4 +244,14 @@ public class ChatboxEvents {
 
         return createPlayersPacket(list);
     }
+    private static boolean shouldSpyCommand(ServerPlayer player,ServerPlayer sender,boolean isOwnerOnly){
+        if (spyingPlayers.containsKey(player.getUUID()) && spyingPlayers.get(player.getUUID())) {
+            if(isOwnerOnly && !(player.getUUID() ==sender.getUUID() || Permissions.check(player,"rcc.chatbox.spyOwnerOnly"))) {
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
 }
