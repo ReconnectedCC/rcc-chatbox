@@ -94,6 +94,7 @@ public class RccChatbox implements ModInitializer {
                     LOGGER.error("Failed to create rcc-chatbox data directory");
                 }
             }
+            ChatboxEvents.register(server);
         });
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
@@ -108,13 +109,6 @@ public class RccChatbox implements ModInitializer {
             }
         });
 
-        ChatboxEvents.register();
 
-        if(isSolsticeLoaded()) {
-            SolsticeEvents.register();
-        }
-        if(isRccDiscordLoaded()) {
-            DiscordEvents.register();
-        }
     }
 }

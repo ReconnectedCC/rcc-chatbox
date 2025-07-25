@@ -37,7 +37,22 @@ public class ChatboxEvents {
 
     private static MinecraftServer mcServer;
 
-    public static void register() {
+    public static void register(MinecraftServer serverStarting) {
+        mcServer = serverStarting;
+        var initWss = new WsServer(new InetSocketAddress(RccChatbox.CONFIG.hostname, RccChatbox.CONFIG.port));
+
+        var wssThread = new Thread(initWss::start);
+        wssThread.start();
+
+        RccChatbox.getInstance().wss(initWss);
+
+        if(RccChatbox.isRccDiscordLoaded()) {
+            DiscordEvents.register();
+        }
+        if(RccChatbox.isSolsticeLoaded()) {
+            SolsticeEvents.register();
+        }
+
         ClientPacketsHandler.register();
         ClientConnectionEvents.CONNECT.register((conn, license, isGuest) -> {
             var playerData = PlayerMeta.getPlayer(license.userId());
@@ -59,18 +74,6 @@ public class ChatboxEvents {
 
             var packetJson = RccChatbox.GSON.toJson(helloPacket);
             conn.send(packetJson);
-        });
-
-        ServerLifecycleEvents.SERVER_STARTING.register(server ->
-                mcServer = server);
-
-        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-            var wss = new WsServer(new InetSocketAddress(RccChatbox.CONFIG.hostname, RccChatbox.CONFIG.port));
-
-            var wssThread = new Thread(wss::start);
-            wssThread.start();
-
-            RccChatbox.getInstance().wss(wss);
         });
 
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
