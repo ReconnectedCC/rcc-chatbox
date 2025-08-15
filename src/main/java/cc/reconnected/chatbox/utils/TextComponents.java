@@ -8,7 +8,6 @@ import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.json.JSONComponentSerializer;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 
 public class TextComponents {
@@ -41,7 +40,7 @@ public class TextComponents {
             case "markdown" -> {
                 var rawContent = MarkdownParser.defaultParser.parseNode(content).toText();
                 var json = JSONComponentSerializer.json();
-                formattedContent = json.deserialize(Text.Serializer.toJson(rawContent));
+                formattedContent = json.deserialize(net.minecraft.network.chat.Component.Serializer.toJson(rawContent));
             }
             case "minimessage" -> formattedContent = MiniMessageSerializer.defaultSerializer.deserialize(content);
             default -> formattedContent = Component.text(content);

@@ -15,18 +15,16 @@ import cc.reconnected.chatbox.ws.CloseCodes;
 import cc.reconnected.chatbox.ws.WsServer;
 import cc.reconnected.library.data.PlayerMeta;
 import cc.reconnected.library.text.parser.MarkdownParser;
-import me.lucko.fabric.api.permissions.v0.Permissions;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-
+import net.minecraft.server.level.ServerPlayer;
 import java.net.InetSocketAddress;
 import java.util.*;
 
@@ -64,7 +62,7 @@ public class ChatboxEvents {
             if (!isGuest) {
                 helloPacket.licenseOwner = playerData.getEffectiveName();
 
-                var mcPlayer = mcServer.getPlayerManager().getPlayer(license.userId());
+                var mcPlayer = mcServer.getPlayerList().getPlayer(license.userId());
                 if (mcPlayer != null) {
                     helloPacket.licenseOwnerUser = User.create(mcPlayer);
                 } else {
@@ -95,11 +93,11 @@ public class ChatboxEvents {
             joinPacket.time = DateUtils.getTime(new Date());
 
             var playerState = StateSaverAndLoader.getPlayerState(handler.getPlayer());
-            spyingPlayers.put(handler.getPlayer().getUuid(), playerState.enableSpy);
+            spyingPlayers.put(handler.getPlayer().getUUID(), playerState.enableSpy);
 
             RccChatbox.getInstance().wss().broadcastEvent(joinPacket, Capability.READ);
 
-            var list = new ArrayList<>(server.getPlayerManager().getPlayerList());
+            var list = new ArrayList<>(server.getPlayerList().getPlayers());
             list.add(handler.getPlayer());
             RccChatbox.getInstance().wss().broadcastEvent(createPlayersPacket(list), Capability.READ);
         });
@@ -109,29 +107,29 @@ public class ChatboxEvents {
             leavePacket.user = User.create(handler.getPlayer());
             leavePacket.time = DateUtils.getTime(new Date());
 
-            spyingPlayers.remove(handler.getPlayer().getUuid());
+            spyingPlayers.remove(handler.getPlayer().getUUID());
 
             RccChatbox.getInstance().wss().broadcastEvent(leavePacket, Capability.READ);
 
-            var list = new ArrayList<>(server.getPlayerManager().getPlayerList());
-            list.removeIf(p -> p.getUuid() == handler.getPlayer().getUuid());
+            var list = new ArrayList<>(server.getPlayerList().getPlayers());
+            list.removeIf(p -> p.getUUID() == handler.getPlayer().getUUID());
             RccChatbox.getInstance().wss().broadcastEvent(createPlayersPacket(list), Capability.READ);
         });
 
         ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
-            if (!(entity instanceof ServerPlayerEntity player))
+            if (!(entity instanceof ServerPlayer player))
                 return;
 
             var deathPacket = new DeathEvent();
-            var source = damageSource.getSource();
+            var source = damageSource.getDirectEntity();
 
-            var message = damageSource.getDeathMessage(entity);
+            var message = damageSource.getLocalizedDeathMessage(entity);
             deathPacket.text = message.getString();
             deathPacket.rawText = message.getString();
-            deathPacket.renderedText = Text.Serializer.toJsonTree(message);
+            deathPacket.renderedText = Component.Serializer.toJsonTree(message);
             deathPacket.user = User.create(player);
-            if (source instanceof ServerPlayerEntity) {
-                deathPacket.source = User.create((ServerPlayerEntity) source);
+            if (source instanceof ServerPlayer) {
+                deathPacket.source = User.create((ServerPlayer) source);
             }
             deathPacket.time = DateUtils.getTime(new Date());
 
@@ -142,8 +140,8 @@ public class ChatboxEvents {
             var worldChangePacket = new WorldChangeEvent();
             worldChangePacket.user = User.create(player);
             //getRegistryKey().getValue().toString();
-            worldChangePacket.origin = origin.getRegistryKey().getValue().toString();
-            worldChangePacket.destination = destination.getRegistryKey().getValue().toString();
+            worldChangePacket.origin = origin.dimension().location().toString();
+            worldChangePacket.destination = destination.dimension().location().toString();
             worldChangePacket.time = DateUtils.getTime(new Date());
 
             RccChatbox.getInstance().wss().broadcastEvent(worldChangePacket, Capability.READ);
@@ -153,10 +151,10 @@ public class ChatboxEvents {
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
             var packet = new InGameChatEvent();
 
-            var parsedMessage = MarkdownParser.defaultParser.parseNode(message.getContent().getString()).toText();
+            var parsedMessage = MarkdownParser.defaultParser.parseNode(message.decoratedContent().getString()).toText();
             packet.text = parsedMessage.getString();
-            packet.rawText = message.getContent().getString();
-            packet.renderedText = Text.Serializer.toJsonTree(parsedMessage);
+            packet.rawText = message.decoratedContent().getString();
+            packet.renderedText = Component.Serializer.toJsonTree(parsedMessage);
             packet.time = DateUtils.getTime(new Date());
             packet.user = User.create(sender);
 
@@ -173,7 +171,7 @@ public class ChatboxEvents {
             packet.time = DateUtils.getTime(new Date());
 
             if (ownerOnly) {
-                RccChatbox.getInstance().wss().broadcastOwnerEvent(packet, Capability.COMMAND, player.getUuid());
+                RccChatbox.getInstance().wss().broadcastOwnerEvent(packet, Capability.COMMAND, player.getUUID());
             } else {
                 RccChatbox.getInstance().wss().broadcastEvent(packet, Capability.COMMAND);
             }
@@ -181,7 +179,7 @@ public class ChatboxEvents {
 
         // listen to chatbox commands
         ServerMessageEvents.ALLOW_CHAT_MESSAGE.register((message, sender, params) -> {
-            var content = message.getContent().getString();
+            var content = message.decoratedContent().getString();
             if (content.isEmpty())
                 return true;
 
@@ -205,28 +203,28 @@ public class ChatboxEvents {
 
             PlayerCommandEvent.EVENT.invoker().onCommand(sender, command, args, isOwnerOnly);
 
-
+            if (!isOwnerOnly) {
                 var server = sender.getServer();
                 if (server == null)
                     return true;
 
-                var playerManager = server.getPlayerManager();
-                var text = Text
-                        .literal(sender.getName().getString() + ": ").setStyle(Style.EMPTY.withColor(Formatting.DARK_GRAY))
-                        .append(Text.literal(content).setStyle(Style.EMPTY.withColor(Formatting.GRAY)));
+                var playerManager = server.getPlayerList();
+                var text = Component
+                        .literal(sender.getName().getString() + ": ").setStyle(Style.EMPTY.withColor(ChatFormatting.DARK_GRAY))
+                        .append(Component.literal(content).setStyle(Style.EMPTY.withColor(ChatFormatting.GRAY)));
 
-                playerManager.getPlayerList().forEach(player -> {
-                    if (shouldSpyCommand(player,sender, isOwnerOnly)) {
-                        player.sendMessage(text, false);
+                playerManager.getPlayers().forEach(player -> {
+                    if (spyingPlayers.containsKey(player.getUUID()) && spyingPlayers.get(player.getUUID())) {
+                        player.displayClientMessage(text, false);
                     }
                 });
-
+            }
 
             return false;
         });
     }
 
-    public static PlayersPacket createPlayersPacket(List<ServerPlayerEntity> list) {
+    public static PlayersPacket createPlayersPacket(List<ServerPlayer> list) {
         var packet = new PlayersPacket();
         packet.time = DateUtils.getTime(new Date());
 
@@ -241,18 +239,8 @@ public class ChatboxEvents {
     }
 
     public static PlayersPacket createPlayersPacket() {
-        var list = mcServer.getPlayerManager().getPlayerList();
+        var list = mcServer.getPlayerList().getPlayers();
 
         return createPlayersPacket(list);
     }
-    private static boolean shouldSpyCommand(ServerPlayerEntity player,ServerPlayerEntity sender,boolean isOwnerOnly){
-        if (spyingPlayers.containsKey(player.getUuid()) && spyingPlayers.get(player.getUuid())) {
-            if(isOwnerOnly && !(player.getUuid() ==sender.getUuid() || Permissions.check(player,"rcc.chatbox.spyOwnerOnly"))) {
-                return false;
-            }
-            return true;
-        }
-        return false;
-    }
-
 }

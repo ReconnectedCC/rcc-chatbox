@@ -9,8 +9,7 @@ import cc.reconnected.discordbridge.events.DiscordMessageEvents;
 import cc.reconnected.library.text.parser.MarkdownParser;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
-import net.minecraft.text.Text;
-
+import net.minecraft.network.chat.Component;
 import java.util.Date;
 
 public class DiscordEvents {
@@ -25,7 +24,7 @@ public class DiscordEvents {
         var packet = new DiscordChatEvent();
         packet.text = message.getContentStripped();
         packet.rawText = message.getContentRaw();
-        packet.renderedText = Text.Serializer.toJsonTree(MarkdownParser.defaultParser.parseNode(message.getContentDisplay()).toText());
+        packet.renderedText = Component.Serializer.toJsonTree(MarkdownParser.defaultParser.parseNode(message.getContentDisplay()).toText());
         packet.discordId = message.getId();
         packet.discordUser = user;
         packet.edited = isEdited;

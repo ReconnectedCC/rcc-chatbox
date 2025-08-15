@@ -1,12 +1,10 @@
 package cc.reconnected.chatbox.integrations;
 
 import cc.reconnected.chatbox.RccChatbox;
-import net.minecraft.server.network.ServerPlayerEntity;
-
-import java.util.UUID;
+import net.minecraft.server.level.ServerPlayer;
 
 public class AfkTracker {
-    public static boolean isPlayerAfk(ServerPlayerEntity player) {
+    public static boolean isPlayerAfk(ServerPlayer player) {
         if (!RccChatbox.isSolsticeLoaded())
             return false;
 

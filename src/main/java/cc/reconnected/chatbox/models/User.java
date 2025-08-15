@@ -4,7 +4,7 @@ import cc.reconnected.chatbox.integrations.AfkTracker;
 import cc.reconnected.discordbridge.RccDiscord;
 import cc.reconnected.library.data.PlayerMeta;
 import net.dv8tion.jda.api.entities.UserSnowflake;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
@@ -24,7 +24,7 @@ public class User {
     @Nullable
     public DiscordUser linkedUser;
 
-    private static void fillInData(User user, @Nullable ServerPlayerEntity entity, boolean resolveDiscord) {
+    private static void fillInData(User user, @Nullable ServerPlayer entity, boolean resolveDiscord) {
         PlayerMeta playerData;
         if(entity != null) {
             playerData = PlayerMeta.getPlayer(entity);
@@ -57,20 +57,20 @@ public class User {
         }
     }
 
-    public static User create(ServerPlayerEntity player, boolean resolveDiscord) {
+    public static User create(ServerPlayer player, boolean resolveDiscord) {
         var user = new User();
 
-        user.name = player.getEntityName();
-        user.uuid = player.getUuidAsString();
+        user.name = player.getScoreboardName();
+        user.uuid = player.getStringUUID();
         user.displayName = player.getDisplayName().getString();
-        user.world = player.getWorld().getRegistryKey().getValue().toString();
+        user.world = player.level().dimension().location().toString();
 
         fillInData(user, player, resolveDiscord);
 
         return user;
     }
 
-    public static User create(ServerPlayerEntity player) {
+    public static User create(ServerPlayer player) {
         return create(player, false);
     }
 
