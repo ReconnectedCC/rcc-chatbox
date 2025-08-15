@@ -9,30 +9,30 @@ import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import me.lucko.fabric.api.permissions.v0.Permissions;
-import net.minecraft.command.CommandRegistryAccess;
-import net.minecraft.command.CommandSource;
-import net.minecraft.server.PlayerManager;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandBuildContext;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.players.PlayerList;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
 import static cc.reconnected.chatbox.command.ChatboxCommand.prefix;
-import static net.minecraft.server.command.CommandManager.*;
+import static net.minecraft.commands.Commands.*;
 
 public class AdminSubCommand {
-    private static @Nullable License getLicenseFromArgument(String id, PlayerManager playerManager) {
+    private static @Nullable License getLicenseFromArgument(String id, PlayerList playerManager) {
         UUID uuid;
         try {
             uuid = UUID.fromString(id);
 
         } catch (IllegalArgumentException e) {
-            var player = playerManager.getPlayer(id);
+            var player = playerManager.getPlayerByName(id);
             if (player == null) {
                 return null;
             }
@@ -47,7 +47,7 @@ public class AdminSubCommand {
         return license;
     }
 
-    public static LiteralArgumentBuilder<ServerCommandSource> register(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess registryAccess, CommandManager.RegistrationEnvironment environment) {
+    public static LiteralArgumentBuilder<CommandSourceStack> register(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext registryAccess, Commands.CommandSelection environment) {
         return literal("admin")
                 .requires(Permissions.require("chatbox.admin", 3))
                 .executes(context -> {
@@ -61,41 +61,41 @@ public class AdminSubCommand {
                     };
 
                     final var text =
-                            Text.empty()
+                            Component.empty()
                                     .append(prefix)
                                     .append("Chatbox admin commands:")
                                     .append(ChatboxCommand.buildHelpMessage("chatbox admin", commands));
 
-                    context.getSource().sendFeedback(() -> text, false);
+                    context.getSource().sendSuccess(() -> text, false);
                     return 1;
                 })
                 .then(argument("user/license", StringArgumentType.string())
                         .suggests((context, builder) -> {
-                            var playerManager = context.getSource().getServer().getPlayerManager();
+                            var playerManager = context.getSource().getServer().getPlayerList();
                             var list = new ArrayList<String>();
-                            list.addAll(playerManager.getPlayerList()
+                            list.addAll(playerManager.getPlayers()
                                     .stream()
                                     .map(player -> player.getGameProfile().getName())
                                     .toList());
                             list.addAll(RccChatbox.licenseManager().getLicenseList());
-                            return CommandSource.suggestMatching(
+                            return SharedSuggestionProvider.suggest(
                                     list,
                                     builder
                             );
                         })
                         .executes(context -> {
                             var id = StringArgumentType.getString(context, "user/license");
-                            var playerManager = context.getSource().getServer().getPlayerManager();
+                            var playerManager = context.getSource().getServer().getPlayerList();
 
                             var license = getLicenseFromArgument(id, playerManager);
                             if (license == null) {
-                                context.getSource().sendFeedback(() -> Text.empty().append(prefix).append(Text.literal("Player or license not found").setStyle(Style.EMPTY.withColor(Formatting.RED))), false);
+                                context.getSource().sendSuccess(() -> Component.empty().append(prefix).append(Component.literal("Player or license not found").setStyle(Style.EMPTY.withColor(ChatFormatting.RED))), false);
                                 return 1;
                             }
 
                             String playerName = license.userId().toString();
 
-                            ServerPlayerEntity player = playerManager.getPlayer(license.userId());
+                            ServerPlayer player = playerManager.getPlayer(license.userId());
                             if (player == null) {
                                 player = playerManager.getPlayer(license.userId());
                             }
@@ -103,27 +103,27 @@ public class AdminSubCommand {
                                 playerName = player.getGameProfile().getName();
                             }
 
-                            var text = Text.empty()
+                            var text = Component.empty()
                                     .append(prefix)
-                                    .append(Text.literal("This license belongs to ")
-                                            .append(Text.literal(playerName)));
+                                    .append(Component.literal("This license belongs to ")
+                                            .append(Component.literal(playerName)));
 
-                            context.getSource().sendFeedback(() -> text, false);
+                            context.getSource().sendSuccess(() -> text, false);
 
                             return 1;
                         })
                         .then(literal("revoke")
                                 .executes(context -> {
                                     var id = StringArgumentType.getString(context, "user/license");
-                                    var playerManager = context.getSource().getServer().getPlayerManager();
+                                    var playerManager = context.getSource().getServer().getPlayerList();
                                     var license = getLicenseFromArgument(id, playerManager);
                                     if (license == null) {
-                                        context.getSource().sendFeedback(() -> Text.empty().append(prefix).append(Text.literal("Player or license not found").setStyle(Style.EMPTY.withColor(Formatting.RED))), false);
+                                        context.getSource().sendSuccess(() -> Component.empty().append(prefix).append(Component.literal("Player or license not found").setStyle(Style.EMPTY.withColor(ChatFormatting.RED))), false);
                                         return 1;
                                     }
 
                                     String playerName = license.userId().toString();
-                                    ServerPlayerEntity player = playerManager.getPlayer(license.userId());
+                                    ServerPlayer player = playerManager.getPlayer(license.userId());
                                     if (player == null) {
                                         player = playerManager.getPlayer(license.userId());
                                     }
@@ -135,7 +135,7 @@ public class AdminSubCommand {
                                     RccChatbox.getInstance().wss().closeLicenseClients(license.uuid(), CloseCodes.CHANGED_LICENSE_KEY);
 
                                     final var finalPlayerName = playerName;
-                                    context.getSource().sendFeedback(() -> Text.empty().append(prefix).append(Text.literal("Revoked " + finalPlayerName + " license!").setStyle(Style.EMPTY.withColor(Formatting.GREEN))), true);
+                                    context.getSource().sendSuccess(() -> Component.empty().append(prefix).append(Component.literal("Revoked " + finalPlayerName + " license!").setStyle(Style.EMPTY.withColor(ChatFormatting.GREEN))), true);
 
                                     return 1;
                                 })
@@ -143,38 +143,38 @@ public class AdminSubCommand {
                         .then(literal("capabilities")
                                 .executes(context -> {
                                     var id = StringArgumentType.getString(context, "user/license");
-                                    var playerManager = context.getSource().getServer().getPlayerManager();
+                                    var playerManager = context.getSource().getServer().getPlayerList();
                                     var license = getLicenseFromArgument(id, playerManager);
                                     if (license == null) {
-                                        context.getSource().sendFeedback(() -> Text.empty().append(prefix).append(Text.literal("Player or license not found").setStyle(Style.EMPTY.withColor(Formatting.RED))), false);
+                                        context.getSource().sendSuccess(() -> Component.empty().append(prefix).append(Component.literal("Player or license not found").setStyle(Style.EMPTY.withColor(ChatFormatting.RED))), false);
                                         return 1;
                                     }
 
-                                    var text = Text.empty().append(prefix).append("License capabilities: ");
+                                    var text = Component.empty().append(prefix).append("License capabilities: ");
                                     license.capabilities().forEach(c -> {
-                                        text.append(Text.of(c.name())).append(Text.of(";"));
+                                        text.append(Component.nullToEmpty(c.name())).append(Component.nullToEmpty(";"));
                                     });
-                                    context.getSource().sendFeedback(() -> text, false);
+                                    context.getSource().sendSuccess(() -> text, false);
                                     return 1;
                                 })
                                 .then(argument("capability", StringArgumentType.word())
                                         .suggests((context, builder) ->
-                                                CommandSource.suggestMatching(Arrays.stream(Capability.values()).map(Enum::name), builder)
+                                                SharedSuggestionProvider.suggest(Arrays.stream(Capability.values()).map(Enum::name), builder)
                                         )
                                         .then(argument("toggle", BoolArgumentType.bool())
                                                 .executes(context -> {
                                                     var capabilityName = StringArgumentType.getString(context, "capability");
                                                     var toggle = BoolArgumentType.getBool(context, "toggle");
                                                     var id = StringArgumentType.getString(context, "user/license");
-                                                    var playerManager = context.getSource().getServer().getPlayerManager();
+                                                    var playerManager = context.getSource().getServer().getPlayerList();
                                                     var license = getLicenseFromArgument(id, playerManager);
                                                     if (license == null) {
-                                                        context.getSource().sendFeedback(() -> Text.empty().append(prefix).append(Text.literal("Player or license not found").setStyle(Style.EMPTY.withColor(Formatting.RED))), false);
+                                                        context.getSource().sendSuccess(() -> Component.empty().append(prefix).append(Component.literal("Player or license not found").setStyle(Style.EMPTY.withColor(ChatFormatting.RED))), false);
                                                         return 1;
                                                     }
 
                                                     String playerName = license.userId().toString();
-                                                    ServerPlayerEntity player = playerManager.getPlayer(license.userId());
+                                                    ServerPlayer player = playerManager.getPlayer(license.userId());
                                                     if (player == null) {
                                                         player = playerManager.getPlayer(license.userId());
                                                     }
@@ -186,20 +186,20 @@ public class AdminSubCommand {
 
                                                     var capability = Capability.valueOf(capabilityName);
 
-                                                    Text text;
+                                                    Component text;
                                                     var capabilities = new HashSet<>(license.capabilities());
                                                     if (toggle) {
                                                         capabilities.add(capability);
-                                                        text = Text.literal("Granted '" + capability + "' to " + playerName).setStyle(Style.EMPTY.withColor(Formatting.GREEN));
+                                                        text = Component.literal("Granted '" + capability + "' to " + playerName).setStyle(Style.EMPTY.withColor(ChatFormatting.GREEN));
                                                     } else {
                                                         capabilities.remove(capability);
-                                                        text = Text.literal("Revoked '" + capability + "' from " + playerName).setStyle(Style.EMPTY.withColor(Formatting.RED));
+                                                        text = Component.literal("Revoked '" + capability + "' from " + playerName).setStyle(Style.EMPTY.withColor(ChatFormatting.RED));
                                                     }
                                                     // save to file
                                                     licenseManager.updateLicense(license.uuid(), capabilities);
 
-                                                    final var finalText = Text.empty().append(prefix).append(text);
-                                                    context.getSource().sendFeedback(() -> finalText, true);
+                                                    final var finalText = Component.empty().append(prefix).append(text);
+                                                    context.getSource().sendSuccess(() -> finalText, true);
 
                                                     return 1;
                                                 })))

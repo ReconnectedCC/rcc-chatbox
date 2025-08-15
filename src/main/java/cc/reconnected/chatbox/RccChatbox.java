@@ -16,7 +16,7 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.util.WorldSavePath;
+import net.minecraft.world.level.storage.LevelResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +87,7 @@ public class RccChatbox implements ModInitializer {
         CommandRegistrationCallback.EVENT.register(ChatboxCommand::register);
 
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
-            dataDirectory = server.getSavePath(WorldSavePath.ROOT).resolve("data").resolve(MOD_ID);
+            dataDirectory = server.getWorldPath(LevelResource.ROOT).resolve("data").resolve(MOD_ID);
             licenseManager = new LicenseManager();
             if (!dataDirectory.toFile().isDirectory()) {
                 if (!dataDirectory.toFile().mkdir()) {
@@ -103,7 +103,7 @@ public class RccChatbox implements ModInitializer {
 
         var delay = 60 * 20;
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if(server.getTicks() % delay == 0) {
+            if(server.getTickCount() % delay == 0) {
                 var pingPacket = new PingPacket();
                 wss.broadcastEvent(pingPacket, null);
             }

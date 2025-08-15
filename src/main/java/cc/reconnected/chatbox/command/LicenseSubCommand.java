@@ -13,12 +13,11 @@ import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.Style;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.minecraft.command.CommandRegistryAccess;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.Text;
+import net.minecraft.commands.CommandBuildContext;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
 
-import static net.minecraft.server.command.CommandManager.literal;
+import static net.minecraft.commands.Commands.literal;
 
 public class LicenseSubCommand {
     /*
@@ -81,17 +80,17 @@ public class LicenseSubCommand {
         return output;
     }
 
-    public static LiteralArgumentBuilder<ServerCommandSource> register(CommandDispatcher<ServerCommandSource> dispatcher,
-                                                                       CommandRegistryAccess registryAccess,
-                                                                       CommandManager.RegistrationEnvironment environment) {
+    public static LiteralArgumentBuilder<CommandSourceStack> register(CommandDispatcher<CommandSourceStack> dispatcher,
+                                                                       CommandBuildContext registryAccess,
+                                                                       Commands.CommandSelection environment) {
         return literal("license")
                 .executes(context -> {
-                    if(!context.getSource().isExecutedByPlayer()) {
-                        context.getSource().sendFeedback(() -> Text.literal("This command can only be executed by players!"), false);
+                    if(!context.getSource().isPlayer()) {
+                        context.getSource().sendSuccess(() -> net.minecraft.network.chat.Component.literal("This command can only be executed by players!"), false);
                         return 0;
                     }
                     var manager = RccChatbox.licenseManager();
-                    final var userId = context.getSource().getPlayer().getUuid();
+                    final var userId = context.getSource().getPlayer().getUUID();
                     var userLicense = manager.getLicenseFromUser(userId);
                     if (userLicense == null) {
                         var text = Component.empty()
@@ -115,12 +114,12 @@ public class LicenseSubCommand {
                 .then(literal("register")
                         .requires(Permissions.require("chatbox.register", true))
                         .executes(context -> {
-                            if(!context.getSource().isExecutedByPlayer()) {
-                                context.getSource().sendFeedback(() -> Text.literal("This command can only be executed by players!"), false);
+                            if(!context.getSource().isPlayer()) {
+                                context.getSource().sendSuccess(() -> net.minecraft.network.chat.Component.literal("This command can only be executed by players!"), false);
                                 return 0;
                             }
                             var manager = RccChatbox.licenseManager();
-                            final var userId = context.getSource().getPlayer().getUuid();
+                            final var userId = context.getSource().getPlayer().getUUID();
                             var userLicense = manager.getLicenseFromUser(userId);
                             var createNew = userLicense == null;
                             if (createNew) {
@@ -134,12 +133,12 @@ public class LicenseSubCommand {
                 .then(literal("revoke")
                         .requires(Permissions.require("chatbox.revoke", true))
                         .executes(context -> {
-                            if(!context.getSource().isExecutedByPlayer()) {
-                                context.getSource().sendFeedback(() -> Text.literal("This command can only be executed by players!"), false);
+                            if(!context.getSource().isPlayer()) {
+                                context.getSource().sendSuccess(() -> net.minecraft.network.chat.Component.literal("This command can only be executed by players!"), false);
                                 return 0;
                             }
                             var manager = RccChatbox.licenseManager();
-                            var userLicense = manager.getLicenseFromUser(context.getSource().getPlayer().getUuid());
+                            var userLicense = manager.getLicenseFromUser(context.getSource().getPlayer().getUUID());
                             if (userLicense == null) {
                                 var text = Component.empty().append(ChatboxCommand.prefix)
                                         .append(Component.text("You already do not have a license!").color(NamedTextColor.RED));

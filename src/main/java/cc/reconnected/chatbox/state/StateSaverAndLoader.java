@@ -1,16 +1,15 @@
 package cc.reconnected.chatbox.state;
 
 import cc.reconnected.chatbox.RccChatbox;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.PersistentState;
-import net.minecraft.world.World;
-
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.saveddata.SavedData;
 import java.util.HashMap;
 import java.util.UUID;
 
-public class StateSaverAndLoader extends PersistentState {
+public class StateSaverAndLoader extends SavedData {
     public final HashMap<UUID, ChatboxPlayerState> players = new HashMap<>();
 
     /**
@@ -21,26 +20,26 @@ public class StateSaverAndLoader extends PersistentState {
     public final HashMap<UUID, UUID> licenses = new HashMap<>();
 
     @Override
-    public NbtCompound writeNbt(NbtCompound nbt) {
-        var playersNbt = new NbtCompound();
+    public CompoundTag save(CompoundTag nbt) {
+        var playersNbt = new CompoundTag();
         players.forEach((uuid, data) -> {
-            var playerNbt = new NbtCompound();
+            var playerNbt = new CompoundTag();
             playerNbt.putBoolean("spy", data.enableSpy);
             playersNbt.put(uuid.toString(), playerNbt);
         });
         nbt.put("players", playersNbt);
 
-        var licensesNbt = new NbtCompound();
-        licenses.forEach((license, playerId) -> licensesNbt.putUuid(license.toString(), playerId));
+        var licensesNbt = new CompoundTag();
+        licenses.forEach((license, playerId) -> licensesNbt.putUUID(license.toString(), playerId));
         nbt.put("licenses", licensesNbt);
         return nbt;
     }
 
-    public static StateSaverAndLoader createFromNbt(NbtCompound nbt) {
+    public static StateSaverAndLoader createFromNbt(CompoundTag nbt) {
         var state = new StateSaverAndLoader();
 
         var playersNbt = nbt.getCompound("players");
-        playersNbt.getKeys().forEach(key -> {
+        playersNbt.getAllKeys().forEach(key -> {
             var playerData = new ChatboxPlayerState();
 
             playerData.enableSpy = playersNbt.getCompound(key).getBoolean("spy");
@@ -49,26 +48,26 @@ public class StateSaverAndLoader extends PersistentState {
         });
 
         var licensesNbt = nbt.getCompound("licenses");
-        licensesNbt.getKeys().forEach(license -> {
-            var playerUuid = licensesNbt.getUuid(license);
+        licensesNbt.getAllKeys().forEach(license -> {
+            var playerUuid = licensesNbt.getUUID(license);
             state.licenses.put(UUID.fromString(license), playerUuid);
         });
         return state;
     }
 
     public static StateSaverAndLoader getServerState(MinecraftServer server) {
-        var persistentStateManager = server.getWorld(World.OVERWORLD).getPersistentStateManager();
-        var state = persistentStateManager.getOrCreate(
+        var persistentStateManager = server.getLevel(Level.OVERWORLD).getDataStorage();
+        var state = persistentStateManager.computeIfAbsent(
                 StateSaverAndLoader::createFromNbt,
                 StateSaverAndLoader::new,
                 RccChatbox.MOD_ID
         );
-        state.markDirty();
+        state.setDirty();
         return state;
     }
 
     public static ChatboxPlayerState getPlayerState(LivingEntity player) {
-        var serverState = getServerState(player.getWorld().getServer());
-        return serverState.players.computeIfAbsent(player.getUuid(), uuid -> new ChatboxPlayerState());
+        var serverState = getServerState(player.level().getServer());
+        return serverState.players.computeIfAbsent(player.getUUID(), uuid -> new ChatboxPlayerState());
     }
 }

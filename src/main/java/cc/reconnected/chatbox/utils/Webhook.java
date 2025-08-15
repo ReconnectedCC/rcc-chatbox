@@ -7,7 +7,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
@@ -39,7 +39,7 @@ public class Webhook {
         }
     }
 
-    public static void send(UUID licenseId, ClientPacketsHandler.ClientMessage message, @Nullable ServerPlayerEntity recipient) {
+    public static void send(UUID licenseId, ClientPacketsHandler.ClientMessage message, @Nullable ServerPlayer recipient) {
         var license = RccChatbox.licenseManager().getLicense(licenseId);
         String label = null;
         if (message.label() != null) {

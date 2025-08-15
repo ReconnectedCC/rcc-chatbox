@@ -2,7 +2,7 @@ package cc.reconnected.chatbox.api.events;
 
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 public interface PlayerCommandEvent {
     Event<PlayerCommandEvent> EVENT = EventFactory.createArrayBacked(PlayerCommandEvent.class, (listeners) -> (player, command, args, ownerOnly) -> {
@@ -11,5 +11,5 @@ public interface PlayerCommandEvent {
         }
     });
 
-    void onCommand(ServerPlayerEntity player, String command, String[] args, boolean ownerOnly);
+    void onCommand(ServerPlayer player, String command, String[] args, boolean ownerOnly);
 }

@@ -18,7 +18,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.json.JSONComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.Text;
 import org.java_websocket.WebSocket;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,7 +43,7 @@ public class ClientPacketsHandler {
 
     private static void tickQueue(MinecraftServer server) {
         // 10 ticks = 0.5 seconds
-        if (server.getTicks() % 10 != 0)
+        if (server.getTickCount() % 10 != 0)
             return;
 
         for (var entry : messageQueue.entrySet()) {
@@ -58,7 +57,7 @@ public class ClientPacketsHandler {
 
             if (msg.type == MessageTypes.SAY) {
                 Webhook.send(uuid, msg, null);
-                mcServer.getPlayerManager().getPlayerList().forEach(player -> player.sendMessage(msg.message));
+                mcServer.getPlayerList().getPlayers().forEach(player -> player.sendMessage(msg.message));
                 msg.conn.send(RccChatbox.GSON.toJson(new SuccessPacket("message_sent", msg.id)));
 
                 // Emit chat_chatbox event
@@ -72,15 +71,15 @@ public class ClientPacketsHandler {
                 chatboxChatPacket.rawName = msg.sayPacket.name != null ? msg.sayPacket.name : chatboxChatPacket.name;
                 // funky stuff
                 var json = JSONComponentSerializer.json().serialize(msg.content);
-                var mcText = Text.Serializer.fromJson(json);
-                chatboxChatPacket.renderedText = Text.Serializer.toJsonTree(mcText);
+                var mcText = net.minecraft.network.chat.Component.Serializer.fromJson(json);
+                chatboxChatPacket.renderedText = net.minecraft.network.chat.Component.Serializer.toJsonTree(mcText);
 
                 chatboxChatPacket.time = DateUtils.getTime(new Date());
                 chatboxChatPacket.user = msg.ownerUser;
 
                 RccChatbox.getInstance().wss().broadcastEvent(chatboxChatPacket, Capability.READ);
             } else if (msg.type == MessageTypes.TELL) {
-                var player = server.getPlayerManager().getPlayer(msg.player);
+                var player = server.getPlayerList().getPlayer(msg.player);
                 if (player == null) {
                     var err = ClientErrors.UNKNOWN_USER;
                     msg.conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, msg.id)));
@@ -138,7 +137,7 @@ public class ClientPacketsHandler {
             var ownerId = client.license.userId();
             var owner = PlayerMeta.getPlayer(ownerId);
 
-            var player = mcServer.getPlayerManager().getPlayer(packet.user);
+            var player = mcServer.getPlayerList().getPlayerByName(packet.user);
             if (player == null) {
                 var err = ClientErrors.UNKNOWN_USER;
                 client.webSocket.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, packet.id)));
@@ -159,7 +158,7 @@ public class ClientPacketsHandler {
                     packet.id != null ? packet.id : -1,
                     MessageTypes.TELL,
                     message,
-                    player.getUuid(),
+                    player.getUUID(),
                     client.license.user,
                     null, null, null
             );
