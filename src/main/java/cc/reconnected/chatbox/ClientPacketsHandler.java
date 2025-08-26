@@ -31,8 +31,6 @@ public class ClientPacketsHandler {
     // License UUID = queue
     private static final ConcurrentHashMap<UUID, ConcurrentLinkedQueue<ClientMessage>> messageQueue = new ConcurrentHashMap<>();
 
-    private static MinecraftServer mcServer;
-
     private static boolean tryEnqueue(UUID licenseId, ClientMessage message) {
         var queue = messageQueue.computeIfAbsent(licenseId, id -> new ConcurrentLinkedQueue<>());
         if (queue.size() >= maxMessageQueSize)
@@ -50,14 +48,14 @@ public class ClientPacketsHandler {
             var uuid = entry.getKey();
             var queue = entry.getValue();
             var msg = queue.poll();
-            if (msg == null) {
+            if (msg == null || msg.conn.isClosed()) {
                 messageQueue.remove(uuid);
                 continue;
             }
 
             if (msg.type == MessageTypes.SAY) {
                 Webhook.send(uuid, msg, null);
-                mcServer.getPlayerList().getPlayers().forEach(player -> player.sendMessage(msg.message));
+                server.getPlayerList().getPlayers().forEach(player -> player.sendMessage(msg.message));
                 msg.conn.send(RccChatbox.GSON.toJson(new SuccessPacket("message_sent", msg.id)));
 
                 // Emit chat_chatbox event
@@ -102,8 +100,7 @@ public class ClientPacketsHandler {
         }
     }
 
-    public static void register() {
-        ServerLifecycleEvents.SERVER_STARTING.register(server -> mcServer = server);
+    public static void register(MinecraftServer mcServer) {
         ServerTickEvents.END_SERVER_TICK.register(ClientPacketsHandler::tickQueue);
 
         ChatboxMessageEvents.SAY.register((client, packet) -> {

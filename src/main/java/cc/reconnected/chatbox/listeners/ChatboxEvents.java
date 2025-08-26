@@ -52,7 +52,7 @@ public class ChatboxEvents {
             SolsticeEvents.register();
         }
 
-        ClientPacketsHandler.register();
+        ClientPacketsHandler.register(serverStarting);
         ClientConnectionEvents.CONNECT.register((conn, license, isGuest) -> {
             var playerData = PlayerMeta.getPlayer(license.userId());
 

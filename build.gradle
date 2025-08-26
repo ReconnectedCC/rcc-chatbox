@@ -66,8 +66,7 @@ dependencies {
     modImplementation "cc.reconnected:rcc-library:${project.rcclibrary_version}"
     modImplementation "cc.reconnected:rcc-discord:${project.rccdiscord_version}"
 
-    modCompileOnly "me.alexdevs:solstice:${project.solstice_version}"
-    modRuntimeOnly "me.alexdevs:solstice:${project.solstice_version}"
+    modImplementation "me.alexdevs:solstice:${project.solstice_version}"
 
     include implementation("org.java-websocket:Java-WebSocket:${project.websocket_version}")
 
