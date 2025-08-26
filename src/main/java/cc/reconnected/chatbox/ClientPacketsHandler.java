@@ -12,7 +12,6 @@ import cc.reconnected.chatbox.utils.TextComponents;
 import cc.reconnected.chatbox.utils.Webhook;
 import cc.reconnected.chatbox.ws.ClientErrors;
 import cc.reconnected.library.data.PlayerMeta;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.json.JSONComponentSerializer;
@@ -51,6 +50,13 @@ public class ClientPacketsHandler {
             var queue = entry.getValue();
             var msg = queue.poll();
             if (msg == null) {
+                messageQueue.remove(uuid);
+                continue;
+            }
+
+            // anti-ai-monologue-bug!
+            // (also known as "we can't even yell back to the client because it disconnected")
+            if( msg.conn.isClosed()) {
                 messageQueue.remove(uuid);
                 continue;
             }
@@ -102,8 +108,8 @@ public class ClientPacketsHandler {
         }
     }
 
-    public static void register() {
-        ServerLifecycleEvents.SERVER_STARTING.register(server -> mcServer = server);
+    public static void register(MinecraftServer server) {
+        mcServer = server;
         ServerTickEvents.END_SERVER_TICK.register(ClientPacketsHandler::tickQueue);
 
         ChatboxMessageEvents.SAY.register((client, packet) -> {

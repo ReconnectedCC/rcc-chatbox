@@ -52,7 +52,10 @@ public class ChatboxEvents {
             SolsticeEvents.register();
         }
 
-        ClientPacketsHandler.register();
+        // Bomber: I would like to have a few words with whoever decided to try listening to the server starting
+        // event INSIDE ClientPacketsHandler's register method... that is only run after the server starting event
+        // has fired...
+        ClientPacketsHandler.register(serverStarting);
         ClientConnectionEvents.CONNECT.register((conn, license, isGuest) -> {
             var playerData = PlayerMeta.getPlayer(license.userId());
 
