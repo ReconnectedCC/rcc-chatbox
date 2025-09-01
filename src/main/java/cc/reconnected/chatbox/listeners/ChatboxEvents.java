@@ -216,6 +216,7 @@ public class ChatboxEvents {
 
                 playerManager.getPlayers().forEach(player -> {
                     if (shouldSpyCommand(player,sender, isOwnerOnly)) {
+
                         player.displayClientMessage(text, false);
                     }
                 });
