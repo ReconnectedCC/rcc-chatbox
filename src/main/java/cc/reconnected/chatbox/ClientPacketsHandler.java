@@ -19,6 +19,7 @@ import net.kyori.adventure.text.serializer.json.JSONComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minecraft.server.MinecraftServer;
 import org.java_websocket.WebSocket;
+import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -85,8 +86,12 @@ public class ClientPacketsHandler {
                 }
                 Webhook.send(uuid, msg, player);
                 player.sendMessage(msg.message);
-
-                msg.conn.send(RccChatbox.GSON.toJson(new SuccessPacket("message_sent", msg.id)));
+                // Last line of defense ~~against qrmcat/bomber's wonderful software~~
+                try {
+                    msg.conn.send(RccChatbox.GSON.toJson(new SuccessPacket("message_sent", msg.id)));
+                } catch(WebsocketNotConnectedException e) {
+                    RccChatbox.LOGGER.warn("Was unable to send message confirmation to a disconnected websocket (UUID: {})", uuid);
+                }
             }
         }
     }
