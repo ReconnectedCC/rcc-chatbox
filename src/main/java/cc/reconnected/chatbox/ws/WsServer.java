@@ -1,17 +1,19 @@
 package cc.reconnected.chatbox.ws;
 
 import cc.reconnected.chatbox.RccChatbox;
-import cc.reconnected.chatbox.api.events.*;
+import cc.reconnected.chatbox.api.events.ChatboxMessageEvents;
+import cc.reconnected.chatbox.api.events.ClientConnectionEvents;
 import cc.reconnected.chatbox.license.Capability;
 import cc.reconnected.chatbox.license.License;
 import cc.reconnected.chatbox.license.LicenseManager;
-import cc.reconnected.chatbox.packets.serverPackets.ErrorPacket;
 import cc.reconnected.chatbox.packets.clientPackets.ClientPacketBase;
 import cc.reconnected.chatbox.packets.clientPackets.SayPacket;
 import cc.reconnected.chatbox.packets.clientPackets.TellPacket;
+import cc.reconnected.chatbox.packets.serverPackets.ErrorPacket;
 import cc.reconnected.chatbox.parsers.Formats;
 import joptsimple.util.InetAddressConverter;
 import org.java_websocket.WebSocket;
+import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 import org.jetbrains.annotations.Nullable;
@@ -100,7 +102,7 @@ public class WsServer extends WebSocketServer {
 
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-        if(!clients.containsKey(conn)) {
+        if (!clients.containsKey(conn)) {
             return;
         }
         var client = clients.remove(conn);
@@ -132,84 +134,96 @@ public class WsServer extends WebSocketServer {
             packet.type = "unknown";
         }
 
-        switch (packet.type) {
-            case "say":
-                var sayPacket = RccChatbox.GSON.fromJson(message, SayPacket.class);
-                sayPacket.id = id;
-                if (!client.license.capabilities().contains(Capability.SAY)) {
-                    var err = ClientErrors.MISSING_CAPABILITY;
+        try {
+            switch (packet.type) {
+                case "say":
+                    sendSayMessage(conn, message, id, client);
+
+                    break;
+                case "tell":
+                    sendTellMessage(conn, message, id, client);
+
+                    break;
+                default:
+                    var err = ClientErrors.UNKNOWN_TYPE;
                     conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
-                    return;
-                }
-
-                if (sayPacket.text == null) {
-                    var err = ClientErrors.MISSING_TEXT;
-                    conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
-                    return;
-                }
-
-                if (sayPacket.mode == null)
-                    sayPacket.mode = "markdown";
-
-                if (!Formats.available.contains(sayPacket.mode)) {
-                    var err = ClientErrors.INVALID_MODE;
-                    conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
-                    return;
-                }
-
-                sayPacket.text = sayPacket.text.substring(0, Math.min(sayPacket.text.length(), messageMaxLength));
-                if (sayPacket.name != null) {
-                    sayPacket.name = sayPacket.name.trim().replace("\n", "");
-                    sayPacket.name = sayPacket.name.substring(0, Math.min(sayPacket.name.length(), nameMaxLength));
-                }
-
-                ChatboxMessageEvents.SAY.invoker().onSay(client, sayPacket);
-
-                break;
-            case "tell":
-                var tellPacket = RccChatbox.GSON.fromJson(message, TellPacket.class);
-                tellPacket.id = id;
-                if (!client.license.capabilities().contains(Capability.TELL)) {
-                    var err = ClientErrors.MISSING_CAPABILITY;
-                    conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
-                    return;
-                }
-
-                if (tellPacket.user == null) {
-                    var err = ClientErrors.MISSING_USER;
-                    conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
-                    return;
-                }
-
-                if (tellPacket.text == null) {
-                    var err = ClientErrors.MISSING_TEXT;
-                    conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
-                    return;
-                }
-
-                if (tellPacket.mode == null)
-                    tellPacket.mode = "markdown";
-
-                if (!Formats.available.contains(tellPacket.mode)) {
-                    var err = ClientErrors.INVALID_MODE;
-                    conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
-                    return;
-                }
-
-                tellPacket.text = tellPacket.text.substring(0, Math.min(tellPacket.text.length(), messageMaxLength));
-                if (tellPacket.name != null) {
-                    tellPacket.name = tellPacket.name.trim().replace("\n", "");
-                    tellPacket.name = tellPacket.name.substring(0, Math.min(tellPacket.name.length(), nameMaxLength));
-                }
-
-                ChatboxMessageEvents.TELL.invoker().onTell(client, tellPacket);
-
-                break;
-            default:
-                var err = ClientErrors.UNKNOWN_TYPE;
-                conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
-                break;
+                    break;
+            }
+        } catch (WebsocketNotConnectedException e) {
+            RccChatbox.LOGGER.warn("Was unable to send message confirmation to a disconnected websocket (UUID: {})", client.license.uuid());
         }
+    }
+
+    private static void sendSayMessage(WebSocket conn, String message, int id, ChatboxClient client) {
+        var sayPacket = RccChatbox.GSON.fromJson(message, SayPacket.class);
+        sayPacket.id = id;
+        if (!client.license.capabilities().contains(Capability.SAY)) {
+            var err = ClientErrors.MISSING_CAPABILITY;
+            conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
+            return;
+        }
+
+        if (sayPacket.text == null) {
+            var err = ClientErrors.MISSING_TEXT;
+            conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
+            return;
+        }
+
+        if (sayPacket.mode == null)
+            sayPacket.mode = "markdown";
+
+        if (!Formats.available.contains(sayPacket.mode)) {
+            var err = ClientErrors.INVALID_MODE;
+            conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
+            return;
+        }
+
+        sayPacket.text = sayPacket.text.substring(0, Math.min(sayPacket.text.length(), messageMaxLength));
+        if (sayPacket.name != null) {
+            sayPacket.name = sayPacket.name.trim().replace("\n", "");
+            sayPacket.name = sayPacket.name.substring(0, Math.min(sayPacket.name.length(), nameMaxLength));
+        }
+
+        ChatboxMessageEvents.SAY.invoker().onSay(client, sayPacket);
+    }
+
+    private static void sendTellMessage(WebSocket conn, String message, int id, ChatboxClient client) {
+        var tellPacket = RccChatbox.GSON.fromJson(message, TellPacket.class);
+        tellPacket.id = id;
+        if (!client.license.capabilities().contains(Capability.TELL)) {
+            var err = ClientErrors.MISSING_CAPABILITY;
+            conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
+            return;
+        }
+
+        if (tellPacket.user == null) {
+            var err = ClientErrors.MISSING_USER;
+            conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
+            return;
+        }
+
+        if (tellPacket.text == null) {
+            var err = ClientErrors.MISSING_TEXT;
+            conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
+            return;
+        }
+
+        if (tellPacket.mode == null)
+            tellPacket.mode = "markdown";
+
+        if (!Formats.available.contains(tellPacket.mode)) {
+            var err = ClientErrors.INVALID_MODE;
+            conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
+            return;
+        }
+
+        tellPacket.text = tellPacket.text.substring(0, Math.min(tellPacket.text.length(), messageMaxLength));
+        if (tellPacket.name != null) {
+            tellPacket.name = tellPacket.name.trim().replace("\n", "");
+            tellPacket.name = tellPacket.name.substring(0, Math.min(tellPacket.name.length(), nameMaxLength));
+        }
+
+        ChatboxMessageEvents.TELL.invoker().onTell(client, tellPacket);
     }
 
     @Override

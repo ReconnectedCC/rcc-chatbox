@@ -4,6 +4,7 @@ import cc.reconnected.chatbox.api.events.ChatboxMessageEvents;
 import cc.reconnected.chatbox.license.Capability;
 import cc.reconnected.chatbox.models.User;
 import cc.reconnected.chatbox.packets.clientPackets.SayPacket;
+import cc.reconnected.chatbox.packets.clientPackets.TellPacket;
 import cc.reconnected.chatbox.packets.serverPackets.ErrorPacket;
 import cc.reconnected.chatbox.packets.serverPackets.SuccessPacket;
 import cc.reconnected.chatbox.packets.serverPackets.events.ChatboxChatEvent;
@@ -12,17 +13,20 @@ import cc.reconnected.chatbox.utils.TextComponents;
 import cc.reconnected.chatbox.utils.Webhook;
 import cc.reconnected.chatbox.ws.ClientErrors;
 import cc.reconnected.library.data.PlayerMeta;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.json.JSONComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import org.java_websocket.WebSocket;
 import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.Date;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -55,45 +59,60 @@ public class ClientPacketsHandler {
             }
 
             if (msg.type == MessageTypes.SAY) {
-                Webhook.send(uuid, msg, null);
-                server.getPlayerList().getPlayers().forEach(player -> player.sendMessage(msg.message));
-                msg.conn.send(RccChatbox.GSON.toJson(new SuccessPacket("message_sent", msg.id)));
-
-                // Emit chat_chatbox event
-                if(msg.sayPacket == null)
-                    continue;
-
-                var chatboxChatPacket = new ChatboxChatEvent();
-                chatboxChatPacket.text = PlainTextComponentSerializer.plainText().serialize(Objects.requireNonNull(msg.content));
-                chatboxChatPacket.name = PlainTextComponentSerializer.plainText().serialize(Objects.requireNonNull(msg.label));
-                chatboxChatPacket.rawText = msg.sayPacket.text;
-                chatboxChatPacket.rawName = msg.sayPacket.name != null ? msg.sayPacket.name : chatboxChatPacket.name;
-                // funky stuff
-                var json = JSONComponentSerializer.json().serialize(msg.content);
-                var mcText = net.minecraft.network.chat.Component.Serializer.fromJson(json);
-                chatboxChatPacket.renderedText = net.minecraft.network.chat.Component.Serializer.toJsonTree(mcText);
-
-                chatboxChatPacket.time = DateUtils.getTime(new Date());
-                chatboxChatPacket.user = msg.ownerUser;
-
-                RccChatbox.getInstance().wss().broadcastEvent(chatboxChatPacket, Capability.READ);
+                sendSayMessage(server, uuid, msg);
             } else if (msg.type == MessageTypes.TELL) {
-                var player = server.getPlayerList().getPlayer(msg.player);
-                if (player == null) {
-                    var err = ClientErrors.UNKNOWN_USER;
-                    msg.conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, msg.id)));
-                    continue;
-                }
-                Webhook.send(uuid, msg, player);
-                player.sendMessage(msg.message);
-                // Last line of defense ~~against qrmcat/bomber's wonderful software~~
-                try {
-                    msg.conn.send(RccChatbox.GSON.toJson(new SuccessPacket("message_sent", msg.id)));
-                } catch(WebsocketNotConnectedException e) {
-                    RccChatbox.LOGGER.warn("Was unable to send message confirmation to a disconnected websocket (UUID: {})", uuid);
-                }
+                sendTellMessage(server, msg, uuid);
+            } else {
+                RccChatbox.LOGGER.warn("Unknown message type: {}", msg.type);
+                continue;
+            }
+
+            try {
+                msg.conn.send(RccChatbox.GSON.toJson(new SuccessPacket("message_sent", msg.id)));
+            } catch (WebsocketNotConnectedException e) {
+                RccChatbox.LOGGER.warn("Was unable to send message confirmation to a disconnected websocket (UUID: {})", uuid);
             }
         }
+    }
+
+    private static void sendSayMessage(MinecraftServer server, UUID uuid, ClientMessage msg) {
+        Webhook.send(uuid, msg, null);
+        server.getPlayerList().getPlayers().forEach(player -> player.sendMessage(msg.message));
+        emitChatboxSayPacket(msg);
+    }
+
+    private static void sendTellMessage(MinecraftServer server, ClientMessage msg, UUID uuid) {
+        var player = server.getPlayerList().getPlayer(msg.player);
+        if (player == null) {
+            var err = ClientErrors.UNKNOWN_USER;
+            msg.conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, msg.id)));
+            return;
+        }
+
+        Webhook.send(uuid, msg, player);
+        player.sendMessage(msg.message);
+    }
+
+    private static void emitChatboxSayPacket(ClientMessage msg) {
+        if (msg.sayPacket == null)
+            return;
+
+        // Emit chat_chatbox event
+        var chatboxChatPacket = new ChatboxChatEvent();
+        chatboxChatPacket.text = PlainTextComponentSerializer.plainText().serialize(Objects.requireNonNull(msg.content));
+        chatboxChatPacket.name = PlainTextComponentSerializer.plainText().serialize(Objects.requireNonNull(msg.label));
+        chatboxChatPacket.rawText = msg.sayPacket.text;
+        chatboxChatPacket.rawName = msg.sayPacket.name != null ? msg.sayPacket.name : chatboxChatPacket.name;
+
+        // funky stuff
+        var json = JSONComponentSerializer.json().serialize(msg.content);
+        var mcText = net.minecraft.network.chat.Component.Serializer.fromJson(json);
+        chatboxChatPacket.renderedText = net.minecraft.network.chat.Component.Serializer.toJsonTree(mcText);
+
+        chatboxChatPacket.time = DateUtils.getTime(new Date());
+        chatboxChatPacket.user = msg.ownerUser;
+
+        RccChatbox.getInstance().wss().broadcastEvent(chatboxChatPacket, Capability.READ);
     }
 
     private static String enqueueAndResult(UUID licenseId, ClientMessage message, int id) {
@@ -139,7 +158,7 @@ public class ClientPacketsHandler {
             var ownerId = client.license.userId();
             var owner = PlayerMeta.getPlayer(ownerId);
 
-            var player = mcServer.getPlayerList().getPlayerByName(packet.user);
+            ServerPlayer player = getPlayerFromPacket(mcServer, packet);
             if (player == null) {
                 var err = ClientErrors.UNKNOWN_USER;
                 client.webSocket.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, packet.id)));
@@ -166,6 +185,26 @@ public class ClientPacketsHandler {
             );
             client.webSocket.send(enqueueAndResult(client.license.uuid(), fullMessage, packet.id));
         });
+    }
+
+    private static @Nullable ServerPlayer getPlayerFromPacket(MinecraftServer mcServer, TellPacket packet) {
+        ServerPlayer player;
+        var uuid = tryParseUuid(packet.user);
+        if (uuid.isPresent()) {
+            player = mcServer.getPlayerList().getPlayer(uuid.get());
+        } else {
+            player = mcServer.getPlayerList().getPlayerByName(packet.user);
+        }
+        return player;
+    }
+
+    private static Optional<UUID> tryParseUuid(String value) {
+        try {
+            var uuid = UUID.fromString(value);
+            return Optional.of(uuid);
+        } catch (IllegalArgumentException e) {
+            return Optional.empty();
+        }
     }
 
     public enum MessageTypes {
