@@ -1,15 +1,15 @@
 package cc.reconnected.chatbox.listeners;
 
-import cc.reconnected.chatbox.RccChatbox;
 import cc.reconnected.chatbox.ClientPacketsHandler;
+import cc.reconnected.chatbox.RccChatbox;
 import cc.reconnected.chatbox.api.events.ClientConnectionEvents;
 import cc.reconnected.chatbox.api.events.PlayerCommandEvent;
-import cc.reconnected.chatbox.state.StateSaverAndLoader;
 import cc.reconnected.chatbox.license.Capability;
+import cc.reconnected.chatbox.models.User;
 import cc.reconnected.chatbox.packets.serverPackets.HelloPacket;
 import cc.reconnected.chatbox.packets.serverPackets.PlayersPacket;
 import cc.reconnected.chatbox.packets.serverPackets.events.*;
-import cc.reconnected.chatbox.models.User;
+import cc.reconnected.chatbox.state.StateSaverAndLoader;
 import cc.reconnected.chatbox.utils.DateUtils;
 import cc.reconnected.chatbox.ws.CloseCodes;
 import cc.reconnected.chatbox.ws.WsServer;
@@ -25,6 +25,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+
 import java.net.InetSocketAddress;
 import java.util.*;
 
@@ -45,10 +46,10 @@ public class ChatboxEvents {
 
         RccChatbox.getInstance().wss(initWss);
 
-        if(RccChatbox.isRccDiscordLoaded()) {
+        if (RccChatbox.isRccDiscordLoaded()) {
             DiscordEvents.register();
         }
-        if(RccChatbox.isSolsticeLoaded()) {
+        if (RccChatbox.isSolsticeLoaded()) {
             SolsticeEvents.register();
         }
 
@@ -203,16 +204,18 @@ public class ChatboxEvents {
 
             PlayerCommandEvent.EVENT.invoker().onCommand(sender, command, args, isOwnerOnly);
 
-            if (!isOwnerOnly) {
-                var server = sender.getServer();
-                if (server == null)
-                    return true;
+            var server = sender.getServer();
+            if (server == null)
+                return true;
 
-                var playerManager = server.getPlayerList();
-                var text = Component
-                        .literal(sender.getName().getString() + ": ").setStyle(Style.EMPTY.withColor(ChatFormatting.DARK_GRAY))
-                        .append(Component.literal(content).setStyle(Style.EMPTY.withColor(ChatFormatting.GRAY)));
+            var playerManager = server.getPlayerList();
+            var text = Component
+                    .literal(sender.getName().getString() + ": ").setStyle(Style.EMPTY.withColor(ChatFormatting.DARK_GRAY))
+                    .append(Component.literal(content).setStyle(Style.EMPTY.withColor(ChatFormatting.GRAY)));
 
+            if (isOwnerOnly) {
+                sender.displayClientMessage(text, false);
+            } else {
                 playerManager.getPlayers().forEach(player -> {
                     if (spyingPlayers.containsKey(player.getUUID()) && spyingPlayers.get(player.getUUID())) {
                         player.displayClientMessage(text, false);
