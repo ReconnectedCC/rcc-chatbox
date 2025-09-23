@@ -2,12 +2,9 @@ package cc.reconnected.chatbox;
 
 import cc.reconnected.chatbox.command.ChatboxCommand;
 import cc.reconnected.chatbox.listeners.ChatboxEvents;
-import cc.reconnected.chatbox.listeners.DiscordEvents;
-import cc.reconnected.chatbox.listeners.SolsticeEvents;
 import cc.reconnected.chatbox.packets.serverPackets.PingPacket;
 import cc.reconnected.chatbox.state.StateSaverAndLoader;
 import cc.reconnected.chatbox.license.LicenseManager;
-import cc.reconnected.chatbox.utils.Webhook;
 import cc.reconnected.chatbox.ws.WsServer;
 import cc.reconnected.library.config.ConfigManager;
 import com.google.gson.Gson;
@@ -21,6 +18,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class RccChatbox implements ModInitializer {
 
@@ -74,6 +73,8 @@ public class RccChatbox implements ModInitializer {
         return FabricLoader.getInstance().isModLoaded("rcc-discord");
     }
 
+    public static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
+
     @Override
     public void onInitialize() {
 
@@ -103,12 +104,18 @@ public class RccChatbox implements ModInitializer {
 
         var delay = 60 * 20;
         ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if(server.getTickCount() % delay == 0) {
+            if (server.getTickCount() % delay == 0) {
                 var pingPacket = new PingPacket();
                 wss.broadcastEvent(pingPacket, null);
             }
         });
 
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            scheduler.shutdown();
+        });
 
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+            scheduler.shutdownNow();
+        });
     }
 }

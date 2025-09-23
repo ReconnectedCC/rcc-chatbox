@@ -28,6 +28,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 import java.net.InetSocketAddress;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 public class ChatboxEvents {
     public static final Set<Character> publicPrefixes = Set.of('\\');
@@ -150,16 +151,31 @@ public class ChatboxEvents {
 
         // chat messages
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
-            var packet = new InGameChatEvent();
+            // mitigate hanging main thread
+            final var future = RccChatbox.scheduler.submit(() -> {
+                try {
+                    var packet = new InGameChatEvent();
 
-            var parsedMessage = MarkdownParser.defaultParser.parseNode(message.decoratedContent().getString()).toText();
-            packet.text = parsedMessage.getString();
-            packet.rawText = message.decoratedContent().getString();
-            packet.renderedText = Component.Serializer.toJsonTree(parsedMessage);
-            packet.time = DateUtils.getTime(new Date());
-            packet.user = User.create(sender);
+                    var parsedMessage = MarkdownParser.defaultParser.parseNode(message.message()).toText();
+                    packet.text = parsedMessage.getString();
+                    packet.rawText = message.decoratedContent().getString();
+                    packet.renderedText = Component.Serializer.toJsonTree(parsedMessage);
+                    packet.time = DateUtils.getTime(new Date());
+                    packet.user = User.create(sender);
 
-            RccChatbox.getInstance().wss().broadcastEvent(packet, Capability.READ);
+                    RccChatbox.getInstance().wss().broadcastEvent(packet, Capability.READ);
+                } catch (Exception e) {
+                    RccChatbox.LOGGER.error("Exception while broadcasting chat message!", e);
+                }
+            });
+
+            RccChatbox.scheduler.schedule(() -> {
+                if (!future.isDone()) {
+                    future.cancel(true);
+                    RccChatbox.LOGGER.warn("Timeout while parsing chat message: {}", message.decoratedContent().getString());
+                }
+            }, 500, TimeUnit.MILLISECONDS);
+
         });
 
         // Handle chatbox command packet sending
