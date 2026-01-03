@@ -29,26 +29,23 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 
 public class ClientPacketsHandler {
-    public static final int maxMessageQueSize = 5;
+    public static final int maxMessageQueueSize = 5;
 
     // License UUID = queue
     private static final ConcurrentHashMap<UUID, ConcurrentLinkedQueue<ClientMessage>> messageQueue = new ConcurrentHashMap<>();
 
     private static boolean tryEnqueue(UUID licenseId, ClientMessage message) {
         var queue = messageQueue.computeIfAbsent(licenseId, id -> new ConcurrentLinkedQueue<>());
-        if (queue.size() >= maxMessageQueSize)
+        if (queue.size() >= maxMessageQueueSize)
             return false;
 
         return queue.offer(message);
     }
 
     private static void tickQueue(MinecraftServer server) {
-        // 10 ticks = 0.5 seconds
-        if (server.getTickCount() % 10 != 0)
-            return;
-
         for (var entry : messageQueue.entrySet()) {
             var uuid = entry.getKey();
             var queue = entry.getValue();
@@ -124,8 +121,8 @@ public class ClientPacketsHandler {
         }
     }
 
-    public static void register(MinecraftServer mcServer) {
-        ServerTickEvents.END_SERVER_TICK.register(ClientPacketsHandler::tickQueue);
+    public static void register(final MinecraftServer mcServer) {
+        RccChatbox.scheduler.scheduleAtFixedRate(() -> tickQueue(mcServer), 0, 500, TimeUnit.MILLISECONDS);
 
         ChatboxMessageEvents.SAY.register((client, packet) -> {
             var ownerId = client.license.userId();

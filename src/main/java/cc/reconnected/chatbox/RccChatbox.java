@@ -11,7 +11,6 @@ import com.google.gson.Gson;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.world.level.storage.LevelResource;
 import org.slf4j.Logger;
@@ -20,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class RccChatbox implements ModInitializer {
 
@@ -95,19 +95,17 @@ public class RccChatbox implements ModInitializer {
                     LOGGER.error("Failed to create rcc-chatbox data directory");
                 }
             }
+
             ChatboxEvents.register(server);
         });
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             serverState = StateSaverAndLoader.getServerState(server);
-        });
 
-        var delay = 60 * 20;
-        ServerTickEvents.END_SERVER_TICK.register(server -> {
-            if (server.getTickCount() % delay == 0) {
+            scheduler.scheduleAtFixedRate(() -> {
                 var pingPacket = new PingPacket();
                 wss.broadcastEvent(pingPacket, null);
-            }
+            }, 0, 1, TimeUnit.MINUTES);
         });
 
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
