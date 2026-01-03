@@ -108,12 +108,8 @@ public class RccChatbox implements ModInitializer {
             }, 0, 1, TimeUnit.MINUTES);
         });
 
-        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
-            scheduler.shutdown();
-        });
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> scheduler.shutdown());
 
-        ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
-            scheduler.shutdownNow();
-        });
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> scheduler.shutdownNow());
     }
 }

@@ -13,7 +13,6 @@ import cc.reconnected.chatbox.utils.TextComponents;
 import cc.reconnected.chatbox.utils.Webhook;
 import cc.reconnected.chatbox.ws.ClientErrors;
 import cc.reconnected.library.data.PlayerMeta;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.json.JSONComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
