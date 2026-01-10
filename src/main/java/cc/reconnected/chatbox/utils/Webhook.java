@@ -5,8 +5,7 @@ import cc.reconnected.chatbox.RccChatbox;
 import cc.reconnected.chatbox.license.License;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import net.minecraft.ChatFormatting;
 import net.minecraft.server.level.ServerPlayer;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,9 +42,9 @@ public class Webhook {
         var license = RccChatbox.licenseManager().getLicense(licenseId);
         String label = null;
         if (message.label() != null) {
-            label = PlainTextComponentSerializer.plainText().serialize(message.label());
+            label = message.label().getString();
         }
-        var text = PlainTextComponentSerializer.plainText().serialize(message.message());
+        var text = message.content() != null ? message.content().getString() : "";
 
         String recipientName = null;
         if (recipient != null) {
@@ -66,8 +65,8 @@ public class Webhook {
         embed.addProperty("description", content);
 
         var color = switch (type) {
-            case TELL -> NamedTextColor.BLUE.value();
-            case SAY -> NamedTextColor.GOLD.value();
+            case TELL -> ChatFormatting.BLUE.getColor();
+            case SAY -> ChatFormatting.GOLD.getColor();
         };
         embed.addProperty("color", color);
 

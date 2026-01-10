@@ -12,17 +12,17 @@ import cc.reconnected.chatbox.utils.TextComponents;
 import cc.reconnected.chatbox.utils.Webhook;
 import cc.reconnected.chatbox.ws.ClientErrors;
 import cc.reconnected.library.data.PlayerMeta;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.json.JSONComponentSerializer;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import org.java_websocket.WebSocket;
 import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.Date;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -56,7 +56,7 @@ public class ClientPacketsHandler {
 
             if (msg.type == MessageTypes.SAY) {
                 Webhook.send(uuid, msg, null);
-                server.getPlayerList().getPlayers().forEach(player -> player.sendMessage(msg.message));
+                server.getPlayerList().getPlayers().forEach(player -> player.sendSystemMessage(msg.message));
                 msg.conn.send(RccChatbox.GSON.toJson(new SuccessPacket("message_sent", msg.id)));
 
                 // Emit chat_chatbox event
@@ -64,14 +64,12 @@ public class ClientPacketsHandler {
                     continue;
 
                 var chatboxChatPacket = new ChatboxChatEvent();
-                chatboxChatPacket.text = PlainTextComponentSerializer.plainText().serialize(Objects.requireNonNull(msg.content));
-                chatboxChatPacket.name = PlainTextComponentSerializer.plainText().serialize(Objects.requireNonNull(msg.label));
+                chatboxChatPacket.text = msg.content != null ? msg.content.getString() : null;
+                chatboxChatPacket.name = msg.label != null ? msg.label.getString() : null;
                 chatboxChatPacket.rawText = msg.sayPacket.text;
                 chatboxChatPacket.rawName = msg.sayPacket.name != null ? msg.sayPacket.name : chatboxChatPacket.name;
-                // funky stuff
-                var json = JSONComponentSerializer.json().serialize(msg.content);
-                var mcText = net.minecraft.network.chat.Component.Serializer.fromJson(json);
-                chatboxChatPacket.renderedText = net.minecraft.network.chat.Component.Serializer.toJsonTree(mcText);
+                // funky stuff is no longer required.
+                chatboxChatPacket.renderedText = Component.Serializer.toJsonTree(msg.content);
 
                 chatboxChatPacket.time = DateUtils.getTime(new Date());
                 chatboxChatPacket.user = msg.ownerUser;
@@ -85,7 +83,7 @@ public class ClientPacketsHandler {
                     continue;
                 }
                 Webhook.send(uuid, msg, player);
-                player.sendMessage(msg.message);
+                player.sendSystemMessage(msg.message);
                 // Last line of defense ~~against qrmcat/bomber's wonderful software~~
                 try {
                     msg.conn.send(RccChatbox.GSON.toJson(new SuccessPacket("message_sent", msg.id)));
@@ -117,7 +115,6 @@ public class ClientPacketsHandler {
             var content = TextComponents.formatContent(packet.text, packet.mode);
             var message = Component.empty()
                     .append(TextComponents.sayPrefix)
-                    .appendSpace()
                     .append(TextComponents.buildChatbotMessage(label, content, owner));
 
             var fullMessage = new ClientMessage(
@@ -152,7 +149,6 @@ public class ClientPacketsHandler {
 
             var message = Component.empty()
                     .append(TextComponents.tellPrefix)
-                    .appendSpace()
                     .append(TextComponents.buildChatbotMessage(label, content, owner));
 
             var fullMessage = new ClientMessage(

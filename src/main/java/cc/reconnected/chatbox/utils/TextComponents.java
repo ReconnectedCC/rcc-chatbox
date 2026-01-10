@@ -1,49 +1,62 @@
 package cc.reconnected.chatbox.utils;
 
-import cc.reconnected.chatbox.parsers.MiniMessageSerializer;
 import cc.reconnected.library.data.PlayerMeta;
 import cc.reconnected.library.text.parser.MarkdownParser;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.event.HoverEvent;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.serializer.json.JSONComponentSerializer;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import eu.pb4.placeholders.api.parsers.LegacyFormattingParser;
+import eu.pb4.placeholders.api.parsers.NodeParser;
+import eu.pb4.placeholders.api.parsers.TextParserV1;
+import me.alexdevs.solstice.api.text.tag.PhaseGradientTag;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.Style;
 import org.jetbrains.annotations.Nullable;
 
 public class TextComponents {
-    public static final LegacyComponentSerializer legacySerializer = LegacyComponentSerializer.legacyAmpersand();
+
+    private static final NodeParser MINIMESSAGE_PARSER;
+    static {
+        var parser = TextParserV1.createSafe();
+        parser.register(PhaseGradientTag.createTag());
+        MINIMESSAGE_PARSER = parser;
+    }
+    private static Component ChatboxHoverText = Component.literal("This message was privately sent to you by an automated chatbot.");
+
     public static final Component tellPrefix = Component.empty()
-            .append(Component.text("[", NamedTextColor.GRAY))
-            .append(Component.text("CB PM").color(NamedTextColor.DARK_GRAY).hoverEvent(HoverEvent.showText(Component.text("This message was privately sent to you by an automated chatbot."))))
-            .append(Component.text("]", NamedTextColor.GRAY));
+            .append(Component.literal("[").withStyle(ChatFormatting.GRAY)
+            .append(Component.literal("CB PM").withStyle(ChatFormatting.DARK_GRAY).withStyle(Style.EMPTY.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,ChatboxHoverText)))))
+            .append(Component.literal("] ").withStyle(ChatFormatting.GRAY));
 
     public static final Component sayPrefix = Component.empty()
-            .append(Component.text("[", NamedTextColor.GRAY))
-            .append(Component.text("CB").color(NamedTextColor.DARK_GRAY).hoverEvent(HoverEvent.showText(Component.text("This message was publicly sent by an automated chatbot."))))
-            .append(Component.text("]", NamedTextColor.GRAY));
+            .append(Component.literal("[").withStyle(ChatFormatting.GRAY)
+            .append(Component.literal("CB").withStyle(ChatFormatting.DARK_GRAY).withStyle(Style.EMPTY.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,ChatboxHoverText)))))
+            .append(Component.literal("] ").withStyle(ChatFormatting.GRAY));
 
     public static Component addLabelInfo(Component name, PlayerMeta owner) {
-        var ownerMeta = Component.text("Owned by " + owner.getEffectiveName());
-        return name.hoverEvent(HoverEvent.showText(ownerMeta));
+        var ownerMeta = Component.literal("Owned by " + owner.getEffectiveName());
+        return Component.empty().withStyle(Style.EMPTY.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,ownerMeta)));
     }
 
     public static Component formatLabel(String name) {
-        return legacySerializer.deserialize(name.trim());
+        return LegacyFormattingParser.ALL.parseNode(name).toText(null, true);
     }
 
     public static Component formatContent(String content, @Nullable String type) {
         content = content.trim();
         Component formattedContent;
         type = type != null ? type : "unknown";
+        NodeParser parser;
         switch (type) {
-            case "format" -> formattedContent = legacySerializer.deserialize(content);
-            case "markdown" -> {
-                var rawContent = MarkdownParser.defaultParser.parseNode(content).toText();
-                var json = JSONComponentSerializer.json();
-                formattedContent = json.deserialize(net.minecraft.network.chat.Component.Serializer.toJson(rawContent));
-            }
-            case "minimessage" -> formattedContent = MiniMessageSerializer.defaultSerializer.deserialize(content);
-            default -> formattedContent = Component.text(content);
+            case "format" -> parser = LegacyFormattingParser.ALL;
+            case "markdown" -> parser = MarkdownParser.defaultParser;
+            case "minimessage" -> parser =MINIMESSAGE_PARSER;
+            default -> parser = null;
+        }
+        if (parser == null ) {
+            formattedContent = Component.literal(content);
+        }
+        else {
+            formattedContent = parser.parseNode(content).toText(null, true);
         }
 
         return formattedContent;
@@ -52,8 +65,7 @@ public class TextComponents {
     public static Component buildChatbotMessage(Component label, Component content, PlayerMeta owner) {
         return Component.empty()
                 .append(addLabelInfo(label, owner))
-                .append(Component.text(':', NamedTextColor.GRAY))
-                .appendSpace()
+                .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
                 .append(content);
 
     }

@@ -57,9 +57,7 @@ dependencies {
     // LuckPerms permissions API
     include modImplementation("me.lucko:fabric-permissions-api:${project.permissions_api_version}")
 
-    // Kyori Adventure API
-    include modImplementation("net.kyori:adventure-platform-fabric:${project.adventure_version}")
-    include implementation("net.kyori:adventure-text-serializer-legacy:${project.adventure_legacy_serializer_version}")
+
 
     modImplementation include("eu.pb4:placeholder-api:${project.placeholderapi_version}")
 

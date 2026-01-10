@@ -7,15 +7,11 @@ import cc.reconnected.chatbox.ws.CloseCodes;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import me.lucko.fabric.api.permissions.v0.Permissions;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.event.ClickEvent;
-import net.kyori.adventure.text.event.HoverEvent;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.Style;
-import net.kyori.adventure.text.format.TextDecoration;
+import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.*;
 
 import static net.minecraft.commands.Commands.literal;
 
@@ -37,44 +33,44 @@ public class LicenseSubCommand {
         var capabilities = license.capabilities().toArray(new Capability[0]);
         for (int i = 0; i < capabilities.length; i++) {
             var cap = capabilities[i];
-            capabilitiesComponent = capabilitiesComponent.append(Component.text(cap.name()).color(NamedTextColor.GOLD));
+            capabilitiesComponent = capabilitiesComponent.append(Component.literal(cap.name()).withStyle(ChatFormatting.GOLD));
 
             // is last element
             if (i < capabilities.length - 1) {
-                capabilitiesComponent = capabilitiesComponent.append(Component.text(", "));
+                capabilitiesComponent = capabilitiesComponent.append(Component.literal(", "));
             }
         }
-        capabilitiesComponent = capabilitiesComponent.append(Component.text("."));
+        capabilitiesComponent = capabilitiesComponent.append(Component.literal("."));
 
 
-        Component output = Component.empty().append(ChatboxCommand.prefix);
+        MutableComponent output = Component.empty().append(ChatboxCommand.prefix);
 
         if (isNew) {
             output = output
-                    .append(Component.text("Your license has been created!").color(NamedTextColor.GREEN))
-                    .appendNewline().appendNewline();
+                    .append(Component.literal("Your license has been created!").withStyle(ChatFormatting.GREEN))
+                    .append("\n").append("\n");
         }
 
         output = output
-                .append(Component.text("Your chatbox license key is:"))
-                .appendNewline()
-                .append(Component.text("  "))
-                .append(Component.text(license.uuid().toString())
-                        .style(Style.style(NamedTextColor.AQUA)
-                                .hoverEvent(HoverEvent.showText(Component.text("Click to copy")))
-                                .clickEvent(ClickEvent.copyToClipboard(license.uuid().toString())))
+                .append(Component.literal("Your chatbox license key is:"))
+                .append("\n")
+                .append(Component.literal("  "))
+                .append(Component.literal(license.uuid().toString())
+                        .withStyle(Style.EMPTY.applyFormat(ChatFormatting.AQUA)
+                                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,Component.literal("Click to copy")))
+                                .withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, license.uuid().toString())))
                 )
-                .appendNewline().appendNewline()
-                .append(Component.text("Register the key in a computer by running:"))
-                .appendNewline()
-                .append(Component.text("  "))
-                .append(Component.text("chatbox register " + license.uuid().toString())
-                        .style(Style.style(NamedTextColor.AQUA)
-                                .hoverEvent(HoverEvent.showText(Component.text("Click to copy")))
-                                .clickEvent(ClickEvent.copyToClipboard("chatbox register " + license.uuid().toString())))
+                .append("\n").append("\n")
+                .append(Component.literal("Register the key in a computer by running:"))
+                .append("\n")
+                .append(Component.literal("  "))
+                .append(Component.literal("chatbox register " + license.uuid().toString())
+                        .withStyle(Style.EMPTY.applyFormat(ChatFormatting.AQUA)
+                                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,Component.literal("Click to copy")))
+                                .withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, "chatbox register " + license.uuid().toString())))
                 )
-                .appendNewline().appendNewline()
-                .append(Component.text("Your license capabilities are: "))
+                .append("\n").append("\n")
+                .append(Component.literal("Your license capabilities are: "))
                 .append(capabilitiesComponent);
 
         return output;
@@ -94,21 +90,22 @@ public class LicenseSubCommand {
                     var userLicense = manager.getLicenseFromUser(userId);
                     if (userLicense == null) {
                         var text = Component.empty()
-                                .append(Component.text("You currently do not have a license!").color(NamedTextColor.RED))
-                                .appendNewline().appendNewline()
-                                .append(Component.text("Register a new license by running:"))
-                                .appendNewline()
-                                .append(Component.text("  "))
-                                .append(Component.text("/chatbox license register")
-                                        .color(NamedTextColor.BLUE).decorate(TextDecoration.UNDERLINED)
-                                        .hoverEvent(HoverEvent.showText(Component.text("Click to suggest")))
-                                        .clickEvent(ClickEvent.copyToClipboard("/chatbox license register "))
+                                .append(Component.literal("You currently do not have a license!").withStyle(ChatFormatting.RED))
+                                .append("\n").append("\n")
+                                .append(Component.literal("Register a new license by running:"))
+                                .append("\n")
+                                .append(Component.literal("  "))
+                                .append(Component.literal("/chatbox license register")
+                                        .withStyle(Style.EMPTY.applyFormat(ChatFormatting.BLUE)
+                                            .withUnderlined(true)
+                                            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Click to suggest")))
+                                            .withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, "/chatbox license register ")))
                                 );
-                        context.getSource().sendMessage(text);
+                        context.getSource().sendSuccess(() ->text,false);
                         return 1;
                     }
 
-                    context.getSource().sendMessage(getLicenseRegistrationOutput(userLicense, false));
+                    context.getSource().sendSuccess(() ->getLicenseRegistrationOutput(userLicense, false),false);
                     return 1;
                 })
                 .then(literal("register")
@@ -126,7 +123,7 @@ public class LicenseSubCommand {
                                 userLicense = manager.createLicense(userId, Capability.DEFAULT);
                             }
 
-                            context.getSource().sendMessage(getLicenseRegistrationOutput(userLicense, createNew));
+                            context.getSource().sendSystemMessage(getLicenseRegistrationOutput(userLicense, createNew));
 
                             return 1;
                         }))
@@ -141,9 +138,9 @@ public class LicenseSubCommand {
                             var userLicense = manager.getLicenseFromUser(context.getSource().getPlayer().getUUID());
                             if (userLicense == null) {
                                 var text = Component.empty().append(ChatboxCommand.prefix)
-                                        .append(Component.text("You already do not have a license!").color(NamedTextColor.RED));
+                                        .append(Component.literal("You already do not have a license!").withStyle(ChatFormatting.RED));
 
-                                context.getSource().sendMessage(text);
+                                context.getSource().sendFailure(text);
                                 return 1;
                             }
 
@@ -152,13 +149,13 @@ public class LicenseSubCommand {
                             var success = manager.deleteLicense(userLicense.uuid());
                             if (success) {
                                 var text = Component.empty().append(ChatboxCommand.prefix)
-                                        .append(Component.text("Your license has been revoked!").color(NamedTextColor.GREEN));
-                                context.getSource().sendMessage(text);
+                                        .append(Component.literal("Your license has been revoked!").withStyle(ChatFormatting.GREEN));
+                                context.getSource().sendSystemMessage(text);
                                 RccChatbox.getInstance().wss().closeLicenseClients(licenseUuid, CloseCodes.CHANGED_LICENSE_KEY);
                             } else {
                                 var text = Component.empty().append(ChatboxCommand.prefix)
-                                        .append(Component.text("There was an error revoking your license!").color(NamedTextColor.RED));
-                                context.getSource().sendMessage(text);
+                                        .append(Component.literal("There was an error revoking your license!").withStyle(ChatFormatting.RED));
+                                context.getSource().sendSystemMessage(text);
                             }
 
                             return 1;
