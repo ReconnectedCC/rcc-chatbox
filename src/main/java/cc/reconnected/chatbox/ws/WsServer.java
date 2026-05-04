@@ -45,8 +45,8 @@ public class WsServer extends WebSocketServer {
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
         InetAddress clientAddress = conn.getRemoteSocketAddress().getAddress();
-        if (handshake.hasFieldValue("X-Forwarded-For")) {
-            clientAddress = new InetAddressConverter().convert(handshake.getFieldValue("X-Forwarded-For"));
+        if (handshake.hasFieldValue("X-Real-IP")) {
+            clientAddress = new InetAddressConverter().convert(handshake.getFieldValue("X-Real-IP"));
         }
 
         var path = conn.getResourceDescriptor();
