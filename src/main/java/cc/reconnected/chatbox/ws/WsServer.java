@@ -144,6 +144,9 @@ public class WsServer extends WebSocketServer {
                     sendTellMessage(conn, message, id, client);
 
                     break;
+                case "ping":
+                    // do nothing
+                    break;
                 default:
                     var err = ClientErrors.UNKNOWN_TYPE;
                     conn.send(RccChatbox.GSON.toJson(new ErrorPacket(err.getErrorMessage(), err.message, id)));
