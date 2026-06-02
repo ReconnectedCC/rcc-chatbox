@@ -2,14 +2,18 @@ package cc.reconnected.chatbox.listeners;
 
 import cc.reconnected.chatbox.RccChatbox;
 import cc.reconnected.chatbox.license.Capability;
+import cc.reconnected.chatbox.mixin.ComponentSerializerAccessor;
 import cc.reconnected.chatbox.models.DiscordUser;
 import cc.reconnected.chatbox.packets.serverPackets.events.DiscordChatEvent;
 import cc.reconnected.chatbox.utils.DateUtils;
 import cc.reconnected.discordbridge.events.DiscordMessageEvents;
 import cc.reconnected.library.text.parser.MarkdownParser;
+import me.alexdevs.solstice.Solstice;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
+
 import java.util.Date;
 
 public class DiscordEvents {
@@ -24,7 +28,7 @@ public class DiscordEvents {
         var packet = new DiscordChatEvent();
         packet.text = message.getContentStripped();
         packet.rawText = message.getContentRaw();
-        packet.renderedText = Component.Serializer.toJsonTree(MarkdownParser.defaultParser.parseNode(message.getContentDisplay()).toText());
+        packet.renderedText = ComponentSerializerAccessor.invokeSerialize(MarkdownParser.defaultParser.parseNode(message.getContentDisplay()).toText(),RccChatbox.serverInstance.registryAccess());
         packet.discordId = message.getId();
         packet.discordUser = user;
         packet.edited = isEdited;

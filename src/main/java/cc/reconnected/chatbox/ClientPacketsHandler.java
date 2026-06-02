@@ -2,6 +2,7 @@ package cc.reconnected.chatbox;
 
 import cc.reconnected.chatbox.api.events.ChatboxMessageEvents;
 import cc.reconnected.chatbox.license.Capability;
+import cc.reconnected.chatbox.mixin.ComponentSerializerAccessor;
 import cc.reconnected.chatbox.models.User;
 import cc.reconnected.chatbox.packets.clientPackets.SayPacket;
 import cc.reconnected.chatbox.packets.serverPackets.ErrorPacket;
@@ -21,20 +22,20 @@ import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Date;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 
 public class ClientPacketsHandler {
-    public static final int maxMessageQueSize = 5;
+    public static final int maxMessageQueueSize = 5;
 
     // License UUID = queue
     private static final ConcurrentHashMap<UUID, ConcurrentLinkedQueue<ClientMessage>> messageQueue = new ConcurrentHashMap<>();
 
     private static boolean tryEnqueue(UUID licenseId, ClientMessage message) {
         var queue = messageQueue.computeIfAbsent(licenseId, id -> new ConcurrentLinkedQueue<>());
-        if (queue.size() >= maxMessageQueSize)
+        if (queue.size() >= maxMessageQueueSize)
             return false;
 
         return queue.offer(message);
@@ -69,7 +70,7 @@ public class ClientPacketsHandler {
                 chatboxChatPacket.rawText = msg.sayPacket.text;
                 chatboxChatPacket.rawName = msg.sayPacket.name != null ? msg.sayPacket.name : chatboxChatPacket.name;
                 // funky stuff is no longer required.
-                chatboxChatPacket.renderedText = Component.Serializer.toJsonTree(msg.content);
+                chatboxChatPacket.renderedText = ComponentSerializerAccessor.invokeSerialize(msg.content,server.registryAccess());
 
                 chatboxChatPacket.time = DateUtils.getTime(new Date());
                 chatboxChatPacket.user = msg.ownerUser;
@@ -103,8 +104,8 @@ public class ClientPacketsHandler {
         }
     }
 
-    public static void register(MinecraftServer mcServer) {
-        ServerTickEvents.END_SERVER_TICK.register(ClientPacketsHandler::tickQueue);
+    public static void register(final MinecraftServer mcServer) {
+        RccChatbox.scheduler.scheduleAtFixedRate(() -> tickQueue(mcServer),0,500, TimeUnit.MILLISECONDS);
 
         ChatboxMessageEvents.SAY.register((client, packet) -> {
             var ownerId = client.license.userId();

@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "cc.reconnected.chatbox.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+
+  ],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "mixins": [
+    "ComponentSerializerAccessor"
+  ]
+}
