@@ -1,16 +1,17 @@
 package cc.reconnected.chatbox.listeners;
 
-import cc.reconnected.chatbox.RccChatbox;
 import cc.reconnected.chatbox.ClientPacketsHandler;
+import cc.reconnected.chatbox.RccChatbox;
 import cc.reconnected.chatbox.api.events.ClientConnectionEvents;
 import cc.reconnected.chatbox.api.events.PlayerCommandEvent;
 import cc.reconnected.chatbox.mixin.ComponentSerializerAccessor;
 import cc.reconnected.chatbox.state.StateSaverAndLoader;
 import cc.reconnected.chatbox.license.Capability;
+import cc.reconnected.chatbox.models.User;
 import cc.reconnected.chatbox.packets.serverPackets.HelloPacket;
 import cc.reconnected.chatbox.packets.serverPackets.PlayersPacket;
 import cc.reconnected.chatbox.packets.serverPackets.events.*;
-import cc.reconnected.chatbox.models.User;
+import cc.reconnected.chatbox.state.StateSaverAndLoader;
 import cc.reconnected.chatbox.utils.DateUtils;
 import cc.reconnected.chatbox.ws.CloseCodes;
 import cc.reconnected.chatbox.ws.WsServer;

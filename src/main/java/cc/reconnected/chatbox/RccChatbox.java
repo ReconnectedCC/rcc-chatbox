@@ -30,6 +30,7 @@ public class RccChatbox implements ModInitializer {
     public static RccChatboxConfig CONFIG;
     public static final Gson GSON = new Gson();
     private static LicenseManager licenseManager;
+    public MinecraftServer server;
 
     // This instance of MinecraftServer exists to get RegistryAccess for Discord Events' json serialization.
     public static MinecraftServer serverInstance;
