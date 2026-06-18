@@ -57,6 +57,10 @@ public class StateSaverAndLoader extends SavedData {
         return state;
     }
 
+    public static StateSaverAndLoader createNew() {
+        return new StateSaverAndLoader();
+    }
+
     public static StateSaverAndLoader getServerState(MinecraftServer server) {
         var persistentStateManager = server.getLevel(Level.OVERWORLD).getDataStorage();
         var state = persistentStateManager.computeIfAbsent(
