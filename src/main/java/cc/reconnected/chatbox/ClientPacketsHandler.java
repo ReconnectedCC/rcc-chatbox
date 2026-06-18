@@ -2,7 +2,6 @@ package cc.reconnected.chatbox;
 
 import cc.reconnected.chatbox.api.events.ChatboxMessageEvents;
 import cc.reconnected.chatbox.license.Capability;
-import cc.reconnected.chatbox.mixin.ComponentSerializerAccessor;
 import cc.reconnected.chatbox.models.User;
 import cc.reconnected.chatbox.packets.clientPackets.SayPacket;
 import cc.reconnected.chatbox.packets.serverPackets.ErrorPacket;
@@ -13,7 +12,6 @@ import cc.reconnected.chatbox.utils.TextComponents;
 import cc.reconnected.chatbox.utils.Webhook;
 import cc.reconnected.chatbox.ws.ClientErrors;
 import cc.reconnected.library.data.PlayerMeta;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -70,7 +68,7 @@ public class ClientPacketsHandler {
                 chatboxChatPacket.rawText = msg.sayPacket.text;
                 chatboxChatPacket.rawName = msg.sayPacket.name != null ? msg.sayPacket.name : chatboxChatPacket.name;
                 // funky stuff is no longer required.
-                chatboxChatPacket.renderedText = ComponentSerializerAccessor.invokeSerialize(msg.content,server.registryAccess());
+                chatboxChatPacket.renderedText = RccChatbox.serializeComponent(msg.content,server.registryAccess());
 
                 chatboxChatPacket.time = DateUtils.getTime(new Date());
                 chatboxChatPacket.user = msg.ownerUser;

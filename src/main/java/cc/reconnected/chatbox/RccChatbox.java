@@ -8,10 +8,16 @@ import cc.reconnected.chatbox.license.LicenseManager;
 import cc.reconnected.chatbox.ws.WsServer;
 import cc.reconnected.library.config.ConfigManager;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.mojang.serialization.JsonOps;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.LevelResource;
 import org.slf4j.Logger;
@@ -80,6 +86,10 @@ public class RccChatbox implements ModInitializer {
     }
 
     public static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
+
+    public static JsonElement serializeComponent(Component component, HolderLookup.Provider provider) {
+        return ComponentSerialization.CODEC.encodeStart(provider.createSerializationContext(JsonOps.INSTANCE), component).getOrThrow(JsonParseException::new);
+    }
 
     @Override
     public void onInitialize() {

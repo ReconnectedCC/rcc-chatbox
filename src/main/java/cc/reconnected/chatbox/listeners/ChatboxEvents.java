@@ -4,7 +4,6 @@ import cc.reconnected.chatbox.RccChatbox;
 import cc.reconnected.chatbox.ClientPacketsHandler;
 import cc.reconnected.chatbox.api.events.ClientConnectionEvents;
 import cc.reconnected.chatbox.api.events.PlayerCommandEvent;
-import cc.reconnected.chatbox.mixin.ComponentSerializerAccessor;
 import cc.reconnected.chatbox.state.StateSaverAndLoader;
 import cc.reconnected.chatbox.license.Capability;
 import cc.reconnected.chatbox.packets.serverPackets.HelloPacket;
@@ -129,7 +128,7 @@ public class ChatboxEvents {
             var message = damageSource.getLocalizedDeathMessage(entity);
             deathPacket.text = message.getString();
             deathPacket.rawText = message.getString();
-            deathPacket.renderedText = ComponentSerializerAccessor.invokeSerialize(message,mcServer.registryAccess());
+            deathPacket.renderedText = RccChatbox.serializeComponent(message,mcServer.registryAccess());
             deathPacket.user = User.create(player);
             if (source instanceof ServerPlayer) {
                 deathPacket.source = User.create((ServerPlayer) source);
@@ -160,7 +159,7 @@ public class ChatboxEvents {
                     var parsedMessage = MarkdownParser.defaultParser.parseNode(message.signedContent()).toText();
                     packet.text = parsedMessage.getString();
                     packet.rawText = message.decoratedContent().getString();
-                    packet.renderedText = ComponentSerializerAccessor.invokeSerialize(parsedMessage,mcServer.registryAccess());
+                    packet.renderedText = RccChatbox.serializeComponent(parsedMessage,mcServer.registryAccess());
                     packet.time = DateUtils.getTime(new Date());
                     packet.user = User.create(sender);
 
