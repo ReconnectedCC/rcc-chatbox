@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MinecraftServerMixin {
     @Inject(at=@At("TAIL"),method = "<init>")
     private void onServerInit(CallbackInfo ci) {
+        RccChatbox.LOGGER.info("Setting serverInstance");
         RccChatbox.serverInstance = (MinecraftServer) (Object) this;
     }
 }
