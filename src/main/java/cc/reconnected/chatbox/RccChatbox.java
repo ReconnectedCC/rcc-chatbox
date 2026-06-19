@@ -88,6 +88,7 @@ public class RccChatbox implements ModInitializer {
         CommandRegistrationCallback.EVENT.register(ChatboxCommand::register);
 
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
+            serverInstance = server;
             dataDirectory = server.getWorldPath(LevelResource.ROOT).resolve("data").resolve(MOD_ID);
             licenseManager = new LicenseManager();
             if (!dataDirectory.toFile().isDirectory()) {
