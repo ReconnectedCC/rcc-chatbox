@@ -13,14 +13,13 @@ import cc.reconnected.chatbox.utils.TextComponents;
 import cc.reconnected.chatbox.utils.Webhook;
 import cc.reconnected.chatbox.ws.ClientErrors;
 import cc.reconnected.library.data.PlayerMeta;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.json.JSONComponentSerializer;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import org.java_websocket.WebSocket;
 import org.java_websocket.exceptions.WebsocketNotConnectedException;
 import org.jetbrains.annotations.Nullable;
+
+import net.minecraft.network.chat.Component;
 
 import java.util.Date;
 import java.util.Objects;
@@ -95,15 +94,11 @@ public class ClientPacketsHandler {
 
         // Emit chat_chatbox event
         var chatboxChatPacket = new ChatboxChatEvent();
-        chatboxChatPacket.text = PlainTextComponentSerializer.plainText().serialize(Objects.requireNonNull(msg.content));
-        chatboxChatPacket.name = PlainTextComponentSerializer.plainText().serialize(Objects.requireNonNull(msg.label));
+        chatboxChatPacket.text = msg.content != null ? msg.content.getString() : null;
+        chatboxChatPacket.name = msg.label != null ? msg.label.getString() : null;
         chatboxChatPacket.rawText = msg.sayPacket.text;
         chatboxChatPacket.rawName = msg.sayPacket.name != null ? msg.sayPacket.name : chatboxChatPacket.name;
-
-        // funky stuff
-        var json = JSONComponentSerializer.json().serialize(msg.content);
-        var mcText = net.minecraft.network.chat.Component.Serializer.fromJson(json);
-        chatboxChatPacket.renderedText = net.minecraft.network.chat.Component.Serializer.toJsonTree(mcText);
+        chatboxChatPacket.renderedText = RccChatbox.serializeComponent(msg.message, RccChatbox.serverInstance.registryAccess());
 
         chatboxChatPacket.time = DateUtils.getTime(new Date());
         chatboxChatPacket.user = msg.ownerUser;
@@ -132,7 +127,6 @@ public class ClientPacketsHandler {
             var content = TextComponents.formatContent(packet.text, packet.mode);
             var message = Component.empty()
                     .append(TextComponents.sayPrefix)
-                    .appendSpace()
                     .append(TextComponents.buildChatbotMessage(label, content, owner));
 
             var fullMessage = new ClientMessage(
@@ -167,7 +161,6 @@ public class ClientPacketsHandler {
 
             var message = Component.empty()
                     .append(TextComponents.tellPrefix)
-                    .appendSpace()
                     .append(TextComponents.buildChatbotMessage(label, content, owner));
 
             var fullMessage = new ClientMessage(
