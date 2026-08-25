@@ -7,17 +7,18 @@ import cc.reconnected.chatbox.state.StateSaverAndLoader;
 import cc.reconnected.chatbox.license.LicenseManager;
 import cc.reconnected.chatbox.ws.WsServer;
 import cc.reconnected.library.config.ConfigManager;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParseException;
+import com.google.gson.*;
+import com.mojang.realmsclient.util.TextRenderingUtils;
 import com.mojang.serialization.JsonOps;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.gui.components.ComponentRenderUtils;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
+import net.minecraft.network.chat.ComponentUtils;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.LevelResource;
 import org.slf4j.Logger;
@@ -85,7 +86,25 @@ public class RccChatbox implements ModInitializer {
     public static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
 
     public static JsonElement serializeComponent(Component component, HolderLookup.Provider provider) {
-        return ComponentSerialization.CODEC.encodeStart(provider.createSerializationContext(JsonOps.INSTANCE), component).getOrThrow(JsonParseException::new);
+        var element = ComponentSerialization.CODEC.encodeStart(provider.createSerializationContext(JsonOps.INSTANCE), component).getOrThrow(JsonParseException::new);
+        return expand(element);
+    }
+
+    private static JsonElement expand(JsonElement e) {
+        if (e.isJsonPrimitive()) {
+            var object = new JsonObject();
+            object.add("text", e);
+            return object;
+        }
+        if (e.isJsonArray()) {
+            var array = e.getAsJsonArray();
+            JsonObject object = expand(array.get(0)).getAsJsonObject();
+            var extra = object.has("extra") ? object.getAsJsonArray("extra") : new JsonArray();
+            for (int i = 1; i < array.size(); i++) extra.add(expand(array.get(i)));
+            object.add("extra", extra);
+            return object;
+        }
+        return e;
     }
 
     @Override
