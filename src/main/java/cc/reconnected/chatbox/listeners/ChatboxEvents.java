@@ -128,7 +128,7 @@ public class ChatboxEvents {
             var message = damageSource.getLocalizedDeathMessage(entity);
             deathPacket.text = message.getString();
             deathPacket.rawText = message.getString();
-            deathPacket.renderedText = Component.Serializer.toJsonTree(message);
+            deathPacket.renderedText = RccChatbox.serializeComponent(message, RccChatbox.server().registryAccess());
             deathPacket.user = User.create(player);
             if (source instanceof ServerPlayer) {
                 deathPacket.source = User.create((ServerPlayer) source);
@@ -159,7 +159,7 @@ public class ChatboxEvents {
                     var parsedMessage = MarkdownParser.defaultParser.parseNode(message.message()).toText();
                     packet.text = parsedMessage.getString();
                     packet.rawText = message.decoratedContent().getString();
-                    packet.renderedText = Component.Serializer.toJsonTree(parsedMessage);
+                    packet.renderedText = RccChatbox.serializeComponent(parsedMessage, RccChatbox.server().registryAccess());
                     packet.time = DateUtils.getTime(new Date());
                     packet.user = User.create(sender);
 

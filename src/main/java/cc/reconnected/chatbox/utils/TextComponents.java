@@ -1,5 +1,6 @@
 package cc.reconnected.chatbox.utils;
 
+import cc.reconnected.chatbox.RccChatbox;
 import cc.reconnected.chatbox.parsers.MiniMessageSerializer;
 import cc.reconnected.library.data.PlayerMeta;
 import cc.reconnected.library.text.parser.MarkdownParser;
@@ -40,7 +41,7 @@ public class TextComponents {
             case "markdown" -> {
                 var rawContent = MarkdownParser.defaultParser.parseNode(content).toText();
                 var json = JSONComponentSerializer.json();
-                formattedContent = json.deserialize(net.minecraft.network.chat.Component.Serializer.toJson(rawContent));
+                formattedContent = json.deserialize(net.minecraft.network.chat.Component.Serializer.toJson(rawContent, RccChatbox.server().registryAccess()));
             }
             case "minimessage" -> formattedContent = MiniMessageSerializer.defaultSerializer.deserialize(content);
             default -> formattedContent = Component.text(content);
