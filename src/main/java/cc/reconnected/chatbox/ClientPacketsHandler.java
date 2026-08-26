@@ -99,11 +99,7 @@ public class ClientPacketsHandler {
         chatboxChatPacket.name = PlainTextComponentSerializer.plainText().serialize(Objects.requireNonNull(msg.label));
         chatboxChatPacket.rawText = msg.sayPacket.text;
         chatboxChatPacket.rawName = msg.sayPacket.name != null ? msg.sayPacket.name : chatboxChatPacket.name;
-
-        // funky stuff
-        var json = JSONComponentSerializer.json().serialize(msg.content);
-        var mcText = net.minecraft.network.chat.Component.Serializer.fromJson(json);
-        chatboxChatPacket.renderedText = net.minecraft.network.chat.Component.Serializer.toJsonTree(mcText);
+        chatboxChatPacket.renderedText = RccChatbox.serializeComponent(msg.message, RccChatbox.server().registryAccess());
 
         chatboxChatPacket.time = DateUtils.getTime(new Date());
         chatboxChatPacket.user = msg.ownerUser;

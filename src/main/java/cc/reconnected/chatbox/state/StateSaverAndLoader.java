@@ -1,11 +1,14 @@
 package cc.reconnected.chatbox.state;
 
 import cc.reconnected.chatbox.RccChatbox;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
+
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -19,8 +22,13 @@ public class StateSaverAndLoader extends SavedData {
      */
     public final HashMap<UUID, UUID> licenses = new HashMap<>();
 
+    private static SavedData.Factory<StateSaverAndLoader> factory = new SavedData.Factory<>(
+            StateSaverAndLoader::new,
+            StateSaverAndLoader::createFromNbt,
+            null);
+
     @Override
-    public CompoundTag save(CompoundTag nbt) {
+    public CompoundTag save(CompoundTag nbt, HolderLookup.Provider provider) {
         var playersNbt = new CompoundTag();
         players.forEach((uuid, data) -> {
             var playerNbt = new CompoundTag();
@@ -35,7 +43,8 @@ public class StateSaverAndLoader extends SavedData {
         return nbt;
     }
 
-    public static StateSaverAndLoader createFromNbt(CompoundTag nbt) {
+
+    public static StateSaverAndLoader createFromNbt(CompoundTag nbt, HolderLookup.Provider provider) {
         var state = new StateSaverAndLoader();
 
         var playersNbt = nbt.getCompound("players");
@@ -57,11 +66,7 @@ public class StateSaverAndLoader extends SavedData {
 
     public static StateSaverAndLoader getServerState(MinecraftServer server) {
         var persistentStateManager = server.getLevel(Level.OVERWORLD).getDataStorage();
-        var state = persistentStateManager.computeIfAbsent(
-                StateSaverAndLoader::createFromNbt,
-                StateSaverAndLoader::new,
-                RccChatbox.MOD_ID
-        );
+        var state = persistentStateManager.computeIfAbsent(factory, RccChatbox.MOD_ID);
         state.setDirty();
         return state;
     }

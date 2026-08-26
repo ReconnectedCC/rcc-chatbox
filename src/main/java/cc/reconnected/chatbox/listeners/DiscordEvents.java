@@ -24,7 +24,7 @@ public class DiscordEvents {
         var packet = new DiscordChatEvent();
         packet.text = message.getContentStripped();
         packet.rawText = message.getContentRaw();
-        packet.renderedText = Component.Serializer.toJsonTree(MarkdownParser.defaultParser.parseNode(message.getContentDisplay()).toText());
+        packet.renderedText = RccChatbox.serializeComponent(MarkdownParser.defaultParser.parseNode(message.getContentDisplay()).toText(), RccChatbox.server().registryAccess());
         packet.discordId = message.getId();
         packet.discordUser = user;
         packet.edited = isEdited;
