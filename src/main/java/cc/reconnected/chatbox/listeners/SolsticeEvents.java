@@ -68,6 +68,8 @@ public class SolsticeEvents {
             packet.restartAt = DateUtils.getTime(restartAtDate);
             packet.restartType = restartType.name().toLowerCase(Locale.ROOT);
 
+            restartScheduledEvent = packet;
+
             fixRestartTime();
 
             RccChatbox.getInstance().wss().broadcastEvent(packet, Capability.READ);
